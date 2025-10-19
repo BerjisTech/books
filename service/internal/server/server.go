@@ -13,6 +13,7 @@ import (
     "github.com/berjistech/berjis-ecosystem/books/service/internal/auth"
     "github.com/berjistech/berjis-ecosystem/books/service/internal/billing"
     "strconv"
+    "database/sql"
 )
 
 type Options struct {
@@ -102,6 +103,14 @@ type Meetup struct {
     Visibility string    `db:"visibility" json:"visibility"`
 }
 
+type Chapter struct {
+    ID           string  `db:"id" json:"id"`
+    BookID       string  `db:"book_id" json:"bookId"`
+    Number       int     `db:"number" json:"number"`
+    Title        string  `db:"title" json:"title"`
+    PageStart    *int    `db:"page_no_start" json:"pageNoStart,omitempty"`
+}
+
 func New(opts Options) *fiber.App {
     app := fiber.New()
     app.Use(cors.New(cors.Config{
@@ -122,11 +131,11 @@ func New(opts Options) *fiber.App {
         q := strings.TrimSpace(c.Query("q"))
         rows := []Book{}
         if q == "" {
-            if err := opts.DB.Select(&rows, `SELECT id, author_id, publisher_id, title, subtitle, description, isbn, language, categories, cover_image_url, ebook_file_url, price_amount, price_currency, shareable, allow_hardcopy, visibility FROM books WHERE visibility='public' ORDER BY created_at DESC LIMIT 50`); err != nil {
+            if err := opts.DB.Select(&rows, `SELECT id, author_id, publisher_id, title, subtitle, description, isbn, language, categories, cover_image_url, price_amount, price_currency, shareable, allow_hardcopy, visibility FROM books WHERE visibility='public' ORDER BY created_at DESC LIMIT 50`); err != nil {
                 return c.Status(500).JSON(fiber.Map{"success": false})
             }
         } else {
-            if err := opts.DB.Select(&rows, `SELECT id, author_id, publisher_id, title, subtitle, description, isbn, language, categories, cover_image_url, ebook_file_url, price_amount, price_currency, shareable, allow_hardcopy, visibility FROM books WHERE visibility='public' AND (LOWER(title) LIKE LOWER($1) OR LOWER(description) LIKE LOWER($1)) ORDER BY created_at DESC LIMIT 50`, "%"+q+"%"); err != nil {
+            if err := opts.DB.Select(&rows, `SELECT id, author_id, publisher_id, title, subtitle, description, isbn, language, categories, cover_image_url, price_amount, price_currency, shareable, allow_hardcopy, visibility FROM books WHERE visibility='public' AND (LOWER(title) LIKE LOWER($1) OR LOWER(description) LIKE LOWER($1)) ORDER BY created_at DESC LIMIT 50`, "%"+q+"%"); err != nil {
                 return c.Status(500).JSON(fiber.Map{"success": false})
             }
         }
@@ -150,27 +159,75 @@ func New(opts Options) *fiber.App {
     })
 
     // Authenticated routes
-    requireAuth := auth.Middleware(auth.Options{HS256Secret: opts.AuthHS256, Env: opts.Env})
+    requireAuth := auth.Middleware(auth.Options{HS256Secret: opts.AuthHS256, Env: opts.Env, CoreAPIBase: opts.CoreAPIBase})
+
+    // List my books (as author or publisher)
+    app.Get("/v1/me/books", requireAuth, func(c *fiber.Ctx) error {
+        uid := auth.UserID(c)
+        rows := []Book{}
+        q := `SELECT id, author_id, publisher_id, title, subtitle, description, isbn, language, categories, cover_image_url, price_amount, price_currency, shareable, allow_hardcopy, visibility
+              FROM books
+              WHERE (author_id IN (SELECT id FROM authors WHERE user_id=$1))
+                 OR (publisher_id IN (SELECT id FROM publishers WHERE user_id=$1))
+              ORDER BY created_at DESC
+              LIMIT 200`
+        if err := opts.DB.Select(&rows, q, uid); err != nil {
+            return c.Status(500).JSON(fiber.Map{"success": false})
+        }
+        return c.JSON(fiber.Map{"success": true, "data": rows})
+    })
 
     app.Post("/v1/books", requireAuth, func(c *fiber.Ctx) error {
-        var in struct { Title string `json:"title"`; Description *string `json:"description"` }
+        var in struct {
+            Title string `json:"title"`
+            Description *string `json:"description"`
+            AuthorID *string `json:"authorId"`
+            PublisherID *string `json:"publisherId"`
+        }
         if err := c.BodyParser(&in); err != nil || strings.TrimSpace(in.Title) == "" {
             return c.Status(400).JSON(fiber.Map{"success": false, "message": "invalid body"})
         }
+        // exactly one of authorId or publisherId must be provided
+        if (in.AuthorID == nil && in.PublisherID == nil) || (in.AuthorID != nil && in.PublisherID != nil) {
+            return c.Status(400).JSON(fiber.Map{"success": false, "message": "provide authorId or publisherId"})
+        }
         uid := auth.UserID(c)
-        var id string
-        err := opts.DB.Get(&id, `INSERT INTO books (author_id, title, description, visibility) VALUES ($1,$2,$3,'public') RETURNING id`, uid, in.Title, in.Description)
-        if err != nil { return c.Status(500).JSON(fiber.Map{"success": false}) }
-        return c.JSON(fiber.Map{"success": true, "id": id})
+        // verify ownership of provided profile
+        if in.AuthorID != nil {
+            var exists int
+            if err := opts.DB.QueryRowx(`SELECT 1 FROM authors WHERE id=$1 AND user_id=$2`, *in.AuthorID, uid).Scan(&exists); err != nil || exists != 1 {
+                return c.Status(403).JSON(fiber.Map{"success": false, "message": "not your author profile"})
+            }
+            var id string
+            if err := opts.DB.Get(&id, `INSERT INTO books (author_id, title, description, visibility) VALUES ($1,$2,$3,'public') RETURNING id`, *in.AuthorID, in.Title, in.Description); err != nil {
+                return c.Status(500).JSON(fiber.Map{"success": false})
+            }
+            return c.JSON(fiber.Map{"success": true, "id": id})
+        }
+        if in.PublisherID != nil {
+            var exists int
+            if err := opts.DB.QueryRowx(`SELECT 1 FROM publishers WHERE id=$1 AND user_id=$2`, *in.PublisherID, uid).Scan(&exists); err != nil || exists != 1 {
+                return c.Status(403).JSON(fiber.Map{"success": false, "message": "not your publisher profile"})
+            }
+            var id string
+            if err := opts.DB.Get(&id, `INSERT INTO books (publisher_id, title, description, visibility) VALUES ($1,$2,$3,'public') RETURNING id`, *in.PublisherID, in.Title, in.Description); err != nil {
+                return c.Status(500).JSON(fiber.Map{"success": false})
+            }
+            return c.JSON(fiber.Map{"success": true, "id": id})
+        }
+        return c.Status(400).JSON(fiber.Map{"success": false, "message": "invalid body"})
     })
 
     app.Patch("/v1/books/:id", requireAuth, func(c *fiber.Ctx) error {
         id := c.Params("id")
         uid := auth.UserID(c)
-        // verify ownership
-        var owner string
-        _ = opts.DB.Get(&owner, `SELECT COALESCE(author_id,'') FROM books WHERE id=$1`, id)
-        if owner != uid { return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"success": false, "message": "forbidden"}) }
+        // verify ownership (author or publisher profile belonging to user)
+        var permitted int
+        _ = opts.DB.QueryRowx(`SELECT 1 FROM books b
+            LEFT JOIN authors a ON a.id=b.author_id
+            LEFT JOIN publishers p ON p.id=b.publisher_id
+            WHERE b.id=$1 AND (a.user_id=$2 OR p.user_id=$2)`, id, uid).Scan(&permitted)
+        if permitted != 1 { return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"success": false, "message": "forbidden"}) }
         var in struct {
             PriceAmount   *float64 `json:"priceAmount"`
             PriceCurrency *string  `json:"priceCurrency"`
@@ -189,6 +246,107 @@ func New(opts Options) *fiber.App {
         args = append(args, id)
         q := "UPDATE books SET " + strings.Join(sets, ", ") + ", updated_at=now() WHERE id=$" + itoa(&idx)
         if _, err := opts.DB.Exec(q, args...); err != nil { return c.Status(500).JSON(fiber.Map{"success": false}) }
+        return c.JSON(fiber.Map{"success": true})
+    })
+
+    // Secure ebook URL for reading (requires ownership or completed ebook purchase)
+    app.Get("/v1/books/:id/ebook-url", requireAuth, func(c *fiber.Ctx) error {
+        id := c.Params("id")
+        uid := auth.UserID(c)
+        var authorID, publisherID *string
+        var ebookURL *string
+        if err := opts.DB.QueryRowx(`SELECT author_id, publisher_id, ebook_file_url FROM books WHERE id=$1`, id).Scan(&authorID, &publisherID, &ebookURL); err != nil {
+            return c.Status(404).JSON(fiber.Map{"success": false, "message": "not found"})
+        }
+        if ebookURL == nil || strings.TrimSpace(*ebookURL) == "" {
+            return c.Status(404).JSON(fiber.Map{"success": false, "message": "no ebook available"})
+        }
+        allowed := userOwnsBook(opts, uid, id)
+        if !allowed {
+            var exists int
+            _ = opts.DB.QueryRowx(`SELECT 1 FROM purchases WHERE user_id=$1 AND book_id=$2 AND kind='ebook' AND status='completed' LIMIT 1`, uid, id).Scan(&exists)
+            if exists == 1 { allowed = true }
+        }
+        if !allowed {
+            return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"success": false, "message": "not allowed"})
+        }
+        return c.JSON(fiber.Map{"success": true, "data": fiber.Map{"url": *ebookURL}})
+    })
+
+    // On-platform reading: list pages (meta)
+    app.Get("/v1/books/:id/pages", requireAuth, func(c *fiber.Ctx) error {
+        bookID := c.Params("id")
+        uid := auth.UserID(c)
+        if !canReadBook(opts, uid, bookID) { return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"success": false}) }
+        type P struct { PageNo int `db:"page_no" json:"pageNo"` }
+        rows := []P{}
+        if err := opts.DB.Select(&rows, `SELECT page_no FROM book_pages WHERE book_id=$1 ORDER BY page_no ASC`, bookID); err != nil {
+            return c.Status(500).JSON(fiber.Map{"success": false})
+        }
+        total := 0
+        if err := opts.DB.Get(&total, `SELECT COUNT(*) FROM book_pages WHERE book_id=$1`, bookID); err != nil { total = len(rows) }
+        return c.JSON(fiber.Map{"success": true, "data": fiber.Map{"pages": rows, "totalPages": total}})
+    })
+
+    // On-platform reading: get page content
+    app.Get("/v1/books/:id/pages/:no", requireAuth, func(c *fiber.Ctx) error {
+        bookID := c.Params("id")
+        uid := auth.UserID(c)
+        if !canReadBook(opts, uid, bookID) { return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"success": false}) }
+        no := strings.TrimSpace(c.Params("no"))
+        var pageNo int
+        if v, err := strconv.Atoi(no); err == nil && v > 0 { pageNo = v } else { return c.Status(400).JSON(fiber.Map{"success": false}) }
+        var html sql.NullString
+        if err := opts.DB.QueryRowx(`SELECT content_html FROM book_pages WHERE book_id=$1 AND page_no=$2`, bookID, pageNo).Scan(&html); err != nil {
+            return c.Status(404).JSON(fiber.Map{"success": false, "message": "page not found"})
+        }
+        total := 0
+        _ = opts.DB.Get(&total, `SELECT COUNT(*) FROM book_pages WHERE book_id=$1`, bookID)
+        return c.JSON(fiber.Map{"success": true, "data": fiber.Map{"pageNo": pageNo, "totalPages": total, "html": html.String}})
+    })
+
+    // Authoring: upsert a page (owner only)
+    app.Post("/v1/books/:id/pages", requireAuth, func(c *fiber.Ctx) error {
+        bookID := c.Params("id")
+        uid := auth.UserID(c)
+        // verify ownership by author
+        var owner string
+        _ = opts.DB.Get(&owner, `SELECT COALESCE(author_id,'') FROM books WHERE id=$1`, bookID)
+        if owner != uid { return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"success": false}) }
+        var in struct { PageNo int `json:"pageNo"`; Html string `json:"html"` }
+        if err := c.BodyParser(&in); err != nil || in.PageNo <= 0 { return c.Status(400).JSON(fiber.Map{"success": false}) }
+        // upsert
+        if _, err := opts.DB.Exec(`INSERT INTO book_pages (book_id, page_no, content_html) VALUES ($1,$2,$3)
+            ON CONFLICT (book_id, page_no) DO UPDATE SET content_html=EXCLUDED.content_html, updated_at=now()`, bookID, in.PageNo, in.Html); err != nil {
+            return c.Status(500).JSON(fiber.Map{"success": false})
+        }
+        return c.JSON(fiber.Map{"success": true})
+    })
+
+    // Chapters: list (auth + can read)
+    app.Get("/v1/books/:id/chapters", requireAuth, func(c *fiber.Ctx) error {
+        bookID := c.Params("id")
+        uid := auth.UserID(c)
+        if !canReadBook(opts, uid, bookID) { return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"success": false}) }
+        rows := []Chapter{}
+        if err := opts.DB.Select(&rows, `SELECT id, book_id, number, title, page_no_start FROM book_chapters WHERE book_id=$1 ORDER BY number ASC`, bookID); err != nil {
+            return c.Status(500).JSON(fiber.Map{"success": false})
+        }
+        return c.JSON(fiber.Map{"success": true, "data": rows})
+    })
+    // Chapters: upsert (owner only)
+    app.Post("/v1/books/:id/chapters", requireAuth, func(c *fiber.Ctx) error {
+        bookID := c.Params("id")
+        uid := auth.UserID(c)
+        var owner string
+        _ = opts.DB.Get(&owner, `SELECT COALESCE(author_id,'') FROM books WHERE id=$1`, bookID)
+        if owner != uid { return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"success": false}) }
+        var in struct { Number int `json:"number"`; Title string `json:"title"`; PageNoStart *int `json:"pageNoStart"` }
+        if err := c.BodyParser(&in); err != nil || in.Number <= 0 || strings.TrimSpace(in.Title) == "" { return c.Status(400).JSON(fiber.Map{"success": false}) }
+        if _, err := opts.DB.Exec(`INSERT INTO book_chapters (book_id, number, title, page_no_start) VALUES ($1,$2,$3,$4)
+            ON CONFLICT (book_id, number) DO UPDATE SET title=EXCLUDED.title, page_no_start=EXCLUDED.page_no_start, updated_at=now()`, bookID, in.Number, in.Title, in.PageNoStart); err != nil {
+            return c.Status(500).JSON(fiber.Map{"success": false})
+        }
         return c.JSON(fiber.Map{"success": true})
     })
 
@@ -432,4 +590,24 @@ func New(opts Options) *fiber.App {
 func itoa(idx *int) string {
     *idx = *idx + 1
     return strconv.Itoa(*idx)
+}
+
+// canReadBook determines if a user can read a given book via in-app pages.
+func canReadBook(opts Options, uid string, bookID string) bool {
+    if uid == "" || opts.DB == nil { return false }
+    if userOwnsBook(opts, uid, bookID) { return true }
+    // Completed ebook purchase grants reading
+    var exists int
+    _ = opts.DB.QueryRowx(`SELECT 1 FROM purchases WHERE user_id=$1 AND book_id=$2 AND kind='ebook' AND status='completed' LIMIT 1`, uid, bookID).Scan(&exists)
+    return exists == 1
+}
+
+// userOwnsBook: true if user is the author or publisher of the book
+func userOwnsBook(opts Options, uid string, bookID string) bool {
+    var exists int
+    _ = opts.DB.QueryRowx(`SELECT 1 FROM books b
+        LEFT JOIN authors a ON a.id=b.author_id
+        LEFT JOIN publishers p ON p.id=b.publisher_id
+        WHERE b.id=$1 AND (a.user_id=$2 OR p.user_id=$2)`, bookID, uid).Scan(&exists)
+    return exists == 1
 }

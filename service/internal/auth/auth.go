@@ -1,8 +1,12 @@
 package auth
 
 import (
+    "encoding/json"
     "errors"
+    "net/http"
+    "strconv"
     "strings"
+    "time"
 
     "github.com/gofiber/fiber/v2"
     "github.com/golang-jwt/jwt/v5"
@@ -11,6 +15,7 @@ import (
 type Options struct {
     HS256Secret string
     Env         string
+    CoreAPIBase string
 }
 
 const userKey = "userID"
@@ -39,6 +44,30 @@ func Middleware(opts Options) fiber.Handler {
         if uid == "" && strings.ToLower(opts.Env) == "development" {
             uid = c.Get("X-User-ID")
         }
+        // If still empty, verify via Core API using cookies/headers
+        if uid == "" && strings.TrimSpace(opts.CoreAPIBase) != "" {
+            req, _ := http.NewRequest("GET", strings.TrimRight(opts.CoreAPIBase, "/")+"/v1/auth/verify", nil)
+            if v := c.Get("Authorization"); v != "" { req.Header.Set("Authorization", v) }
+            if v := c.Get("Cookie"); v != "" { req.Header.Set("Cookie", v) }
+            client := &http.Client{ Timeout: 3 * time.Second }
+            if resp, err := client.Do(req); err == nil && resp != nil {
+                defer resp.Body.Close()
+                var raw map[string]any
+                if err := json.NewDecoder(resp.Body).Decode(&raw); err == nil {
+                    if data, _ := raw["data"].(map[string]any); data != nil {
+                        if valid, ok := data["valid"].(bool); ok && valid {
+                            if u, ok := data["uid"].(float64); ok { uid = strconv.FormatInt(int64(u), 10) }
+                            if uid == "" {
+                                if us, ok := data["uid"].(string); ok { uid = us }
+                                if uid == "" {
+                                    if us2, ok := data["userId"].(string); ok { uid = us2 }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
         if uid == "" {
             return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"success": false, "message": "login required"})
         }
@@ -53,4 +82,3 @@ func UserID(c *fiber.Ctx) string {
     }
     return ""
 }
-

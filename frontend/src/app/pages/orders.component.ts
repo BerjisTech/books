@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ApiService } from '../api.service';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-orders',
@@ -22,7 +23,10 @@ import { ApiService } from '../api.service';
       <tr *ngFor="let p of items" style="border-bottom: 1px solid #e5e7eb11;">
         <td style="padding:8px">{{ p.title || p.bookId }}</td>
         <td style="padding:8px">{{ p.kind }}</td>
-        <td style="padding:8px">{{ p.status }}</td>
+        <td style="padding:8px">
+          {{ p.status }}
+          <button *ngIf="p.kind==='ebook' && p.status==='completed'" (click)="read(p.bookId)" style="margin-left:8px;">Read</button>
+        </td>
         <td style="padding:8px">{{ p.pricePaid || '-' }} {{ p.currency || '' }}</td>
         <td style="padding:8px">{{ p.createdAt | date:'short' }}</td>
       </tr>
@@ -32,7 +36,7 @@ import { ApiService } from '../api.service';
 export class OrdersPageComponent {
   loading = false;
   items: any[] = [];
-  constructor(private api: ApiService) { this.refresh(); }
+  constructor(private api: ApiService, private router: Router) { this.refresh(); }
   refresh() {
     this.loading = true;
     this.api.listMyPurchases().subscribe({
@@ -40,5 +44,5 @@ export class OrdersPageComponent {
       error: () => { this.items = []; this.loading = false; }
     });
   }
+  read(bookId: string) { this.router.navigate(['/book', bookId]); }
 }
-

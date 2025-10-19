@@ -2,11 +2,13 @@ import { Component, OnInit } from '@angular/core';
 import { RouterLink, RouterOutlet } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { environment } from '../environments/environment';
+import { CommonModule } from '@angular/common';
+import { AuthService } from './auth.service';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, RouterLink, FormsModule],
+  imports: [CommonModule, RouterOutlet, RouterLink, FormsModule],
   templateUrl: './app.component.html'
 })
 export class AppComponent implements OnInit {
@@ -14,12 +16,20 @@ export class AppComponent implements OnInit {
   coreBase = environment.apiBase;
   booksBase = '';
   newBooksBase = '';
+  authed = false;
+  accountUrl = 'http://berjis.test/account';
+  userName: string | null = null;
+  constructor(private auth: AuthService) {}
   ngOnInit(): void {
     const w: any = (typeof window !== 'undefined') ? (window as any) : {};
     const stored = typeof localStorage !== 'undefined' ? localStorage.getItem('booksApiBase') : '';
     if (stored && !w.__BOOKS_API__) { w.__BOOKS_API__ = stored; }
     this.booksBase = w.__BOOKS_API__ || 'http://localhost:8088';
     this.newBooksBase = this.booksBase;
+    // Check auth/session against Core API
+    this.auth.isAuthed().subscribe(v => this.authed = !!v);
+    this.auth.user().subscribe(u => this.userName = u?.name || null);
+    this.auth.check();
   }
   saveBooksBase() {
     const w: any = (typeof window !== 'undefined') ? (window as any) : {};

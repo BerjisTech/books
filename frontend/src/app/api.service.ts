@@ -17,26 +17,20 @@ export class ApiService {
   }
 
   // Public endpoints
-  // Books service base for dev/prod
-  private svcBase() {
-    const w: any = (typeof window !== 'undefined') ? (window as any) : {};
-    return w.__BOOKS_API__ || 'http://localhost:8088';
-  }
-
   getPublicBooks(q?: string) {
     const qs = q ? `?q=${encodeURIComponent(q)}` : '';
-    return this.http.get<{success: boolean; data: any[]}>(`${this.svcBase()}/v1/public/books${qs}`);
+    return this.http.get<{success: boolean; data: any[]}>(`/svc/v1/public/books${qs}`);
   }
 
   getPublicMeetups(q?: string) {
     const qs = q ? `?q=${encodeURIComponent(q)}` : '';
-    return this.http.get<{success: boolean; data: any[]}>(`${this.svcBase()}/v1/public/meetups${qs}`);
+    return this.http.get<{success: boolean; data: any[]}>(`/svc/v1/public/meetups${qs}`);
   }
 
   // Authenticated
   createPurchase(bookId: string, kind: 'ebook'|'hardcopy', provider: string = 'mpesa'): Observable<{status: number, body: any}> {
     return new Observable(observer => {
-      this.http.post(`${this.svcBase()}/v1/purchases`, { bookId, kind, provider }, { headers: this.headers(), observe: 'response' })
+      this.http.post(`/svc/v1/purchases`, { bookId, kind, provider }, { headers: this.headers(), observe: 'response' })
         .subscribe({
           next: res => observer.next({ status: res.status, body: res.body }),
           error: err => {
@@ -53,11 +47,38 @@ export class ApiService {
   }
 
   confirmPurchase(purchaseId: string) {
-    return this.http.post(`${this.svcBase()}/v1/purchases/${encodeURIComponent(purchaseId)}/confirm`, {}, { headers: this.headers() });
+    return this.http.post(`/svc/v1/purchases/${encodeURIComponent(purchaseId)}/confirm`, {}, { headers: this.headers() });
   }
 
   listMyPurchases() {
-    return this.http.get<{success: boolean; data: any[]}>(`${this.svcBase()}/v1/me/purchases`, { headers: this.headers() });
+    return this.http.get<{success: boolean; data: any[]}>(`/svc/v1/me/purchases`, { headers: this.headers() });
+  }
+  // Author/Publisher
+  createBook(title: string, description?: string) {
+    return this.http.post<{success: boolean; id: string}>(`/svc/v1/books`, { title, description }, { headers: this.headers() });
+  }
+  listMyBooks() {
+    return this.http.get<{success: boolean; data: any[]}>(`/svc/v1/me/books`, { headers: this.headers() });
+  }
+  // Reading
+  getEbookUrl(bookId: string) {
+    return this.http.get<{success: boolean; data: { url: string }}>(`/svc/v1/books/${encodeURIComponent(bookId)}/ebook-url`, { headers: this.headers() });
+  }
+  getPage(bookId: string, pageNo: number) {
+    return this.http.get<{success: boolean; data: any}>(`/svc/v1/books/${encodeURIComponent(bookId)}/pages/${pageNo}`, { headers: this.headers() });
+  }
+  listPages(bookId: string) {
+    return this.http.get<{success: boolean; data: any}>(`/svc/v1/books/${encodeURIComponent(bookId)}/pages`, { headers: this.headers() });
+  }
+  upsertPage(bookId: string, pageNo: number, html: string) {
+    return this.http.post<{success: boolean}>(`/svc/v1/books/${encodeURIComponent(bookId)}/pages`, { pageNo, html }, { headers: this.headers() });
+  }
+  // Chapters
+  listChapters(bookId: string) {
+    return this.http.get<{success: boolean; data: any[]}>(`/svc/v1/books/${encodeURIComponent(bookId)}/chapters`, { headers: this.headers() });
+  }
+  upsertChapter(bookId: string, number: number, title: string, pageNoStart?: number) {
+    return this.http.post<{success: boolean}>(`/svc/v1/books/${encodeURIComponent(bookId)}/chapters`, { number, title, pageNoStart }, { headers: this.headers() });
   }
   createClub(name: string, description?: string): Observable<any> {
     return this.http.post(`/svc/v1/clubs`, { name, description }, { headers: this.headers() });

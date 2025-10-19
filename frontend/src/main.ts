@@ -16,6 +16,8 @@ import { MarketplacePageComponent } from './app/pages/marketplace.component';
 import { ClubsPageComponent } from './app/pages/clubs.component';
 import { MeetupsPageComponent } from './app/pages/meetups.component';
 import { OrdersPageComponent } from './app/pages/orders.component';
+import { DashboardPageComponent } from './app/pages/dashboard.component';
+import { ReaderPageComponent } from './app/pages/reader.component';
 
 const routes: Routes = [
   { path: '', component: HomePageComponent },
@@ -23,6 +25,9 @@ const routes: Routes = [
   { path: 'clubs', component: ClubsPageComponent },
   { path: 'meetups', component: MeetupsPageComponent },
   { path: 'orders', component: OrdersPageComponent },
+  { path: 'book/:id', redirectTo: 'book/:id/page/1' },
+  { path: 'book/:id/page/:n', component: ReaderPageComponent },
+  { path: 'dashboard', component: DashboardPageComponent },
   { path: '**', redirectTo: '' }
 ];
 
