@@ -1,0 +1,51 @@
+import { Component, Input } from '@angular/core';
+import { CommonModule } from '@angular/common';
+
+@Component({
+  selector: 'app-payment-panel',
+  standalone: true,
+  imports: [CommonModule],
+  template: `
+    <div style="border:1px solid #e5e7eb33; padding:12px; border-radius:8px;">
+      <h3 style="margin:0 0 8px 0">Payment Required</h3>
+      <ng-container *ngIf="payment as p">
+        <div style="font-size:13px; opacity:.8">Provider: {{ p.intent?.provider || 'mpesa' }}</div>
+        <div style="font-size:13px; opacity:.8">Amount: {{ (p.intent?.amount_cents || 0) / 100 }} {{ p.intent?.currency }}</div>
+        <div *ngIf="p.next_action as na" style="margin-top:8px;">
+          <ng-container [ngSwitch]="na.action">
+            <div *ngSwitchCase="'stk_push'">
+              <p>{{ na.message || 'Approve the prompt on your phone.' }}</p>
+              <small>Note: STK push is a placeholder here; actual push will be initiated by the provider.</small>
+            </div>
+            <div *ngSwitchCase="'paybill_form'">
+              <p>Paybill Instructions</p>
+              <div>Business Short Code: <strong>{{ na.business_short_code }}</strong></div>
+              <div>Account: <strong>{{ na.account_number }}</strong></div>
+              <div>Amount: <strong>{{ (p.intent?.amount_cents || 0) / 100 }} {{ p.intent?.currency }}</strong></div>
+              <p style="margin-top:6px; font-size:13px; opacity:.8">Complete the payment in your M-Pesa app, then return here.</p>
+            </div>
+            <div *ngSwitchDefault>
+              <p>Follow the instructions to complete payment.</p>
+              <pre style="white-space:pre-wrap; background:#f8fafc10; padding:8px; border-radius:6px;">{{ na | json }}</pre>
+            </div>
+          </ng-container>
+        </div>
+        <div *ngIf="!p.next_action">
+          <pre style="white-space:pre-wrap; background:#f8fafc10; padding:8px; border-radius:6px;">{{ p | json }}</pre>
+        </div>
+      </ng-container>
+    </div>
+  `
+})
+export class PaymentPanelComponent {
+  // Accept either the raw { intent, next_action } or wrapped { payment: { intent, next_action } }
+  _details: any;
+  @Input() set details(v: any) { this._details = v; }
+  get payment() {
+    if (!this._details) return null;
+    if (this._details.payment) return this._details.payment;
+    if (this._details.intent || this._details.next_action) return this._details;
+    return null;
+  }
+}
+
