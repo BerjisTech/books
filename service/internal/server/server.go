@@ -167,8 +167,8 @@ func New(opts Options) *fiber.App {
         rows := []Book{}
         q := `SELECT id, author_id, publisher_id, title, subtitle, description, isbn, language, categories, cover_image_url, price_amount, price_currency, shareable, allow_hardcopy, visibility
               FROM books
-              WHERE (author_id IN (SELECT id FROM authors WHERE user_id=$1))
-                 OR (publisher_id IN (SELECT id FROM publishers WHERE user_id=$1))
+              WHERE (author_id IN (SELECT id FROM authors WHERE core_user_id=$1))
+                 OR (publisher_id IN (SELECT id FROM publishers WHERE core_user_id=$1))
               ORDER BY created_at DESC
               LIMIT 200`
         if err := opts.DB.Select(&rows, q, uid); err != nil {
@@ -195,7 +195,7 @@ func New(opts Options) *fiber.App {
         // verify ownership of provided profile
         if in.AuthorID != nil {
             var exists int
-            if err := opts.DB.QueryRowx(`SELECT 1 FROM authors WHERE id=$1 AND user_id=$2`, *in.AuthorID, uid).Scan(&exists); err != nil || exists != 1 {
+            if err := opts.DB.QueryRowx(`SELECT 1 FROM authors WHERE id=$1 AND core_user_id=$2`, *in.AuthorID, uid).Scan(&exists); err != nil || exists != 1 {
                 return c.Status(403).JSON(fiber.Map{"success": false, "message": "not your author profile"})
             }
             var id string
@@ -206,7 +206,7 @@ func New(opts Options) *fiber.App {
         }
         if in.PublisherID != nil {
             var exists int
-            if err := opts.DB.QueryRowx(`SELECT 1 FROM publishers WHERE id=$1 AND user_id=$2`, *in.PublisherID, uid).Scan(&exists); err != nil || exists != 1 {
+            if err := opts.DB.QueryRowx(`SELECT 1 FROM publishers WHERE id=$1 AND core_user_id=$2`, *in.PublisherID, uid).Scan(&exists); err != nil || exists != 1 {
                 return c.Status(403).JSON(fiber.Map{"success": false, "message": "not your publisher profile"})
             }
             var id string
@@ -226,7 +226,7 @@ func New(opts Options) *fiber.App {
         _ = opts.DB.QueryRowx(`SELECT 1 FROM books b
             LEFT JOIN authors a ON a.id=b.author_id
             LEFT JOIN publishers p ON p.id=b.publisher_id
-            WHERE b.id=$1 AND (a.user_id=$2 OR p.user_id=$2)`, id, uid).Scan(&permitted)
+            WHERE b.id=$1 AND (a.core_user_id=$2 OR p.core_user_id=$2)`, id, uid).Scan(&permitted)
         if permitted != 1 { return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"success": false, "message": "forbidden"}) }
         var in struct {
             PriceAmount   *float64 `json:"priceAmount"`
@@ -338,9 +338,7 @@ func New(opts Options) *fiber.App {
     app.Post("/v1/books/:id/chapters", requireAuth, func(c *fiber.Ctx) error {
         bookID := c.Params("id")
         uid := auth.UserID(c)
-        var owner string
-        _ = opts.DB.Get(&owner, `SELECT COALESCE(author_id,'') FROM books WHERE id=$1`, bookID)
-        if owner != uid { return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"success": false}) }
+        if !userOwnsBook(opts, uid, bookID) { return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"success": false}) }
         var in struct { Number int `json:"number"`; Title string `json:"title"`; PageNoStart *int `json:"pageNoStart"` }
         if err := c.BodyParser(&in); err != nil || in.Number <= 0 || strings.TrimSpace(in.Title) == "" { return c.Status(400).JSON(fiber.Map{"success": false}) }
         if _, err := opts.DB.Exec(`INSERT INTO book_chapters (book_id, number, title, page_no_start) VALUES ($1,$2,$3,$4)
@@ -348,6 +346,48 @@ func New(opts Options) *fiber.App {
             return c.Status(500).JSON(fiber.Map{"success": false})
         }
         return c.JSON(fiber.Map{"success": true})
+    })
+
+    // Profiles: authors/publishers for current user
+    app.Get("/v1/me/authors", requireAuth, func(c *fiber.Ctx) error {
+        uid := auth.UserID(c)
+        type A struct { ID string `db:"id" json:"id"`; Name string `db:"display_name" json:"displayName"` }
+        var rows []A
+        if err := opts.DB.Select(&rows, `SELECT id, display_name FROM authors WHERE core_user_id=$1 ORDER BY display_name`, uid); err != nil {
+            return c.Status(500).JSON(fiber.Map{"success": false})
+        }
+        return c.JSON(fiber.Map{"success": true, "data": rows})
+    })
+    app.Post("/v1/me/authors", requireAuth, func(c *fiber.Ctx) error {
+        uid := auth.UserID(c)
+        var in struct{ DisplayName string `json:"displayName"`; Bio *string `json:"bio"` }
+        if err := c.BodyParser(&in); err != nil || strings.TrimSpace(in.DisplayName) == "" {
+            return c.Status(400).JSON(fiber.Map{"success": false})
+        }
+        var id string
+        if err := opts.DB.QueryRowx(`INSERT INTO authors (core_user_id, display_name, bio) VALUES ($1,$2,$3) RETURNING id`, uid, in.DisplayName, in.Bio).Scan(&id); err != nil {
+            return c.Status(500).JSON(fiber.Map{"success": false})
+        }
+        return c.JSON(fiber.Map{"success": true, "data": fiber.Map{"id": id}})
+    })
+    app.Get("/v1/me/publishers", requireAuth, func(c *fiber.Ctx) error {
+        uid := auth.UserID(c)
+        type P struct { ID string `db:"id" json:"id"`; Name string `db:"name" json:"name"` }
+        var rows []P
+        if err := opts.DB.Select(&rows, `SELECT id, name FROM publishers WHERE core_user_id=$1 ORDER BY name`, uid); err != nil {
+            return c.Status(500).JSON(fiber.Map{"success": false})
+        }
+        return c.JSON(fiber.Map{"success": true, "data": rows})
+    })
+    app.Post("/v1/me/publishers", requireAuth, func(c *fiber.Ctx) error {
+        uid := auth.UserID(c)
+        var in struct{ Name string `json:"name"`; Description *string `json:"description"` }
+        if err := c.BodyParser(&in); err != nil || strings.TrimSpace(in.Name) == "" { return c.Status(400).JSON(fiber.Map{"success": false}) }
+        var id string
+        if err := opts.DB.QueryRowx(`INSERT INTO publishers (core_user_id, name, description) VALUES ($1,$2,$3) RETURNING id`, uid, in.Name, in.Description).Scan(&id); err != nil {
+            return c.Status(500).JSON(fiber.Map{"success": false})
+        }
+        return c.JSON(fiber.Map{"success": true, "data": fiber.Map{"id": id}})
     })
 
     app.Post("/v1/purchases", requireAuth, func(c *fiber.Ctx) error {
@@ -608,6 +648,6 @@ func userOwnsBook(opts Options, uid string, bookID string) bool {
     _ = opts.DB.QueryRowx(`SELECT 1 FROM books b
         LEFT JOIN authors a ON a.id=b.author_id
         LEFT JOIN publishers p ON p.id=b.publisher_id
-        WHERE b.id=$1 AND (a.user_id=$2 OR p.user_id=$2)`, bookID, uid).Scan(&exists)
+        WHERE b.id=$1 AND (a.core_user_id=$2 OR p.core_user_id=$2)`, bookID, uid).Scan(&exists)
     return exists == 1
 }

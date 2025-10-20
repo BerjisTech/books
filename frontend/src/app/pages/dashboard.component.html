@@ -1,0 +1,117 @@
+<h2>Dashboard</h2>
+
+<div *ngIf="!authed" style="padding:8px; border:1px solid #e5e7eb22; border-radius:6px; background:#0b1020;">
+  <div style="font-weight:600;">You’re not signed in</div>
+  <p style="opacity:.85;">View the marketplace publicly. To manage your profile, purchases, or publish books, sign in at <a href="http://berjis.test/account">berjis.test</a>.</p>
+  </div>
+
+<div *ngIf="authed" style="margin:8px 0;">
+  <div style="margin-bottom:8px;">Roles: <span *ngIf="roles.length === 0">reader (default)</span><span *ngFor="let r of roles" style="display:inline-block; margin-right:6px; padding:2px 8px; border:1px solid #e5e7eb22; border-radius:999px; font-size:12px;">{{ r }}</span></div>
+
+  <section style="margin:16px 0;">
+    <h3 style="margin:0 0 6px 0;">Reader</h3>
+    <p style="opacity:.85;">Your library and recent purchases.</p>
+    <div *ngIf="libLoading">Loading library…</div>
+    <div *ngIf="!libLoading && library.length === 0" style="opacity:.8">No purchases yet.</div>
+    <ul>
+      <li *ngFor="let item of library" style="margin:6px 0;">
+        <strong>{{ item.title || item.bookId }}</strong>
+        <span style="opacity:.8"> — {{ item.kind }} • {{ item.status }}</span>
+        <button *ngIf="item.kind==='ebook' && item.status==='completed'" (click)="read(item.bookId)" style="margin-left:8px;">Read</button>
+      </li>
+    </ul>
+  </section>
+
+  <section *ngIf="hasRole('author') || hasRole('creator')" style="margin:16px 0;">
+    <h3 style="margin:0 0 6px 0;">Author</h3>
+    <p style="opacity:.85;">Create and manage your books.</p>
+    <div style="margin:8px 0; display:flex; flex-direction:column; gap:8px;">
+      <div>
+        <input [(ngModel)]="newTitle" placeholder="Book title" />
+        <input [(ngModel)]="newDesc" placeholder="Description (optional)" style="width:320px;" />
+      </div>
+      <div>
+        <label><input type="radio" name="profile" value="author" [(ngModel)]="profileKind" /> As Author</label>
+        <select [(ngModel)]="selectedAuthorId" [disabled]="profileKind!=='author'">
+          <option [ngValue]="null">Select author…</option>
+          <option *ngFor="let a of myAuthors" [ngValue]="a.id">{{ a.displayName || a.name }}</option>
+        </select>
+        <button (click)="applyAuthor()" style="margin-left:6px;">Apply as Author</button>
+      </div>
+      <div>
+        <label><input type="radio" name="profile" value="publisher" [(ngModel)]="profileKind" /> As Publisher</label>
+        <select [(ngModel)]="selectedPublisherId" [disabled]="profileKind!=='publisher'">
+          <option [ngValue]="null">Select publisher…</option>
+          <option *ngFor="let p of myPublishers" [ngValue]="p.id">{{ p.name }}</option>
+        </select>
+        <button (click)="applyPublisher()" style="margin-left:6px;">Apply as Publisher</button>
+      </div>
+      <div>
+        <button (click)="createBook()">Create</button>
+        <span *ngIf="createMsg" style="margin-left:8px; font-size:12px; opacity:.85;">{{ createMsg }}</span>
+      </div>
+    </div>
+    <div style="margin-top:8px;">
+      <div style="font-weight:600; margin:8px 0 4px 0;">My Books</div>
+      <div *ngIf="myLoading">Loading…</div>
+      <div *ngIf="!myLoading && myBooks.length===0" style="opacity:.8">No books yet.</div>
+      <ul>
+        <li *ngFor="let b of myBooks" style="margin:6px 0;">
+          <div>
+            <strong>{{ b.title }}</strong>
+            <span *ngIf="b.subtitle"> — {{ b.subtitle }}</span>
+            <span style="opacity:.8"> • {{ b.visibility }}</span>
+            <button style="margin-left:8px;" (click)="toggleEditor(b.id)">{{ editBookId===b.id ? 'Close' : 'Add Page' }}</button>
+            <button style="margin-left:8px;" (click)="toggleChapters(b.id)">{{ chapterBookId===b.id ? 'Hide Chapters' : 'Chapters' }}</button>
+            <a [routerLink]="['/book', b.id]" style="margin-left:8px;">Open Reader</a>
+          </div>
+          <div *ngIf="editBookId===b.id" style="margin-top:6px; padding:8px; border:1px solid #e5e7eb22; border-radius:6px;">
+            <div>
+              Page #: <input type="number" [(ngModel)]="newPageNo" min="1" style="width:80px;" />
+            </div>
+            <div style="margin-top:6px;">
+              <div style="display:flex; gap:8px; align-items:center; margin-bottom:6px;">
+                <label style="font-size:12px; opacity:.8;">
+                  <input type="checkbox" [(ngModel)]="useMarkdown" /> Markdown
+                </label>
+                <label *ngIf="useMarkdown" style="font-size:12px; opacity:.8;">
+                  <input type="checkbox" [(ngModel)]="previewMd" /> Preview
+                </label>
+                <button (click)="insertImage(mdArea)" style="font-size:12px;">Insert Image</button>
+                <button (click)="insertCode(mdArea)" style="font-size:12px;">Insert Code</button>
+              </div>
+              <textarea #mdArea [(ngModel)]="newPageHtml" rows="6" style="width:100%;" placeholder="Page HTML or Markdown"></textarea>
+              <div *ngIf="useMarkdown && previewMd" style="margin-top:8px; padding:8px; border:1px dashed #e5e7eb33; border-radius:6px; background:#0f172a;">
+                <div style="font-size:12px; opacity:.8; margin-bottom:4px;">Preview</div>
+                <div [innerHTML]="mdToHtml(newPageHtml)"></div>
+              </div>
+            </div>
+            <div style="margin-top:6px;">
+              <button (click)="savePage(b.id)">Save Page</button>
+            </div>
+          </div>
+          <div *ngIf="chapterBookId===b.id" style="margin-top:6px; padding:8px; border:1px solid #e5e7eb22; border-radius:6px;">
+            <div style="font-weight:600; margin-bottom:6px;">Chapters</div>
+            <div *ngIf="chapLoading">Loading chapters…</div>
+            <ul>
+              <li *ngFor="let c of chapters" style="font-size:14px; margin:2px 0;">{{ c.number }}. {{ c.title }} <span *ngIf="c.pageNoStart" style="opacity:.7">(p{{ c.pageNoStart }})</span></li>
+            </ul>
+            <div style="margin-top:8px; font-size:13px;">Add/Update chapter</div>
+            <div>Number: <input type="number" [(ngModel)]="chNumber" min="1" style="width:80px;" /> Title: <input [(ngModel)]="chTitle" style="width:240px;" /> Start Page: <input type="number" [(ngModel)]="chStart" min="1" style="width:80px;" /></div>
+            <div style="margin-top:6px;"><button (click)="saveChapter(b.id)">Save Chapter</button></div>
+          </div>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <section *ngIf="hasRole('publisher')" style="margin:16px 0;">
+    <h3 style="margin:0 0 6px 0;">Publisher</h3>
+    <p style="opacity:.85;">Organize catalog, pricing, and share permissions. (UI placeholder)</p>
+  </section>
+
+  <section *ngIf="hasRole('organizer') || hasRole('club_admin')" style="margin:16px 0;">
+    <h3 style="margin:0 0 6px 0;">Community</h3>
+    <p style="opacity:.85;">Manage clubs and meetups. (UI placeholder)</p>
+  </section>
+</div>

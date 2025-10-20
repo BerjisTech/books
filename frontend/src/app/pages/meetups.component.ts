@@ -7,24 +7,7 @@ import { ApiService } from '../api.service';
   selector: 'app-meetups',
   standalone: true,
   imports: [CommonModule, FormsModule],
-  template: `
-    <h2>Meetups</h2>
-    <div style="margin:8px 0">
-      <input [(ngModel)]="q" placeholder="Search meetups" />
-      <button (click)="search()">Search</button>
-    </div>
-    <div *ngIf="loading">Loading…</div>
-    <div *ngIf="!loading && items.length === 0">No meetups found.</div>
-    <ul>
-      <li *ngFor="let m of items" style="margin:8px 0">
-        <strong>{{ m.title }}</strong>
-        <span *ngIf="m.location"> — {{ m.location }}</span>
-        <div style="opacity:.7">{{ m.description }}</div>
-        <div>{{ m.isPaid ? ('Paid ' + (m.priceAmount || '')) : 'Free' }}</div>
-        <div>{{ m.startTime | date:'medium' }}</div>
-      </li>
-    </ul>
-  `
+  templateUrl: './meetups.component.html'
 })
 export class MeetupsPageComponent {
   items: any[] = [];

@@ -1,0 +1,24 @@
+<h2>My Orders</h2>
+<div style="font-size:12px; opacity:.8; margin:8px 0;">Make sure a dev user ID is set on the Marketplace page in development.</div>
+<div *ngIf="loading">Loading…</div>
+<div *ngIf="!loading && items.length === 0">No purchases yet.</div>
+<table *ngIf="items.length > 0" style="border-collapse: collapse; width: 100%;">
+  <tr style="text-align:left; border-bottom: 1px solid #e5e7eb22;">
+    <th style="padding:8px">Title</th>
+    <th style="padding:8px">Kind</th>
+    <th style="padding:8px">Status</th>
+    <th style="padding:8px">Price</th>
+    <th style="padding:8px">Created</th>
+  </tr>
+  <tr *ngFor="let p of items" style="border-bottom: 1px solid #e5e7eb11;">
+    <td style="padding:8px">{{ p.title || p.bookId }}</td>
+    <td style="padding:8px">{{ p.kind }}</td>
+    <td style="padding:8px">
+      {{ p.status }}
+      <button *ngIf="p.kind==='ebook' && p.status==='completed'" (click)="read(p.bookId)" style="margin-left:8px;">Read</button>
+    </td>
+    <td style="padding:8px">{{ p.pricePaid || '-' }} {{ p.currency || '' }}</td>
+    <td style="padding:8px">{{ p.createdAt | date:'short' }}</td>
+  </tr>
+</table>
+

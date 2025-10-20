@@ -8,50 +8,7 @@ import { ApiService } from '../api.service';
   selector: 'app-reader',
   standalone: true,
   imports: [CommonModule, RouterLink],
-  template: `
-    <div class="flex items-center justify-between mb-2">
-      <h2 class="m-0 text-xl font-semibold">Reader</h2>
-      <a routerLink="/marketplace" class="text-blue-500 hover:underline">Back to Marketplace</a>
-    </div>
-    <div *ngIf="error" class="p-2 border border-rose-600 text-rose-100 rounded">{{ error }}</div>
-    <div *ngIf="!error" class="grid grid-cols-12 gap-4">
-      <aside class="col-span-12 md:col-span-3">
-        <div class="flex items-center justify-between mb-2">
-          <div class="font-semibold">Contents</div>
-          <button (click)="toggleNav()" class="text-xs px-2 py-1 border rounded">{{ navCollapsed ? 'Expand' : 'Collapse' }}</button>
-        </div>
-        <ng-container *ngIf="!navCollapsed">
-          <div class="font-semibold mb-1" *ngIf="chapters.length">Chapters</div>
-          <ul class="mb-3">
-            <li *ngFor="let c of chapters" class="mb-1">
-              <button (click)="toggleChapter(c.number)" [ngClass]="{'font-semibold text-blue-400': isActiveChapter(c), 'text-slate-300': !isActiveChapter(c)}" class="text-left w-full hover:underline">
-                {{ c.number }}. {{ c.title }}
-              </button>
-              <div *ngIf="expanded[c.number]" class="mt-1 flex flex-wrap gap-2 text-xs">
-                <button *ngFor="let p of pagesForChapter(c.number)" (click)="go(p)" [class]="btnClass(p)" class="px-2 py-1 rounded border">
-                  {{ p.pageNo }}
-                </button>
-              </div>
-            </li>
-          </ul>
-          <div class="font-semibold mb-1">All Pages</div>
-          <div class="flex flex-wrap gap-2 text-sm">
-            <button *ngFor="let p of pages" (click)="go(p)" [class]="btnClass(p)" class="px-2 py-1 rounded border">
-              {{ p.pageNo }}
-            </button>
-          </div>
-        </ng-container>
-      </aside>
-      <section class="col-span-12 md:col-span-9">
-        <div class="mb-2">
-          <button (click)="goPrev()" [disabled]="pageNo<=1" class="px-2 py-1 border rounded disabled:opacity-50">Prev</button>
-          <span class="mx-2">Page {{ pageNo }} of {{ totalPages || '?' }}</span>
-          <button (click)="goNext()" [disabled]="totalPages>0 && pageNo>=totalPages" class="px-2 py-1 border rounded disabled:opacity-50">Next</button>
-        </div>
-        <div [innerHTML]="html" class="min-h-[60vh] p-4 border rounded bg-slate-900"></div>
-      </section>
-    </div>
-  `
+  templateUrl: './reader.component.html'
 })
 export class ReaderPageComponent {
   bookId = '';

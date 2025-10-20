@@ -54,8 +54,8 @@ export class ApiService {
     return this.http.get<{success: boolean; data: any[]}>(`/svc/v1/me/purchases`, { headers: this.headers() });
   }
   // Author/Publisher
-  createBook(title: string, description?: string) {
-    return this.http.post<{success: boolean; id: string}>(`/svc/v1/books`, { title, description }, { headers: this.headers() });
+  createBook(params: { title: string; description?: string; authorId?: string; publisherId?: string; }) {
+    return this.http.post<{success: boolean; id: string}>(`/svc/v1/books`, params, { headers: this.headers() });
   }
   listMyBooks() {
     return this.http.get<{success: boolean; data: any[]}>(`/svc/v1/me/books`, { headers: this.headers() });
@@ -76,6 +76,19 @@ export class ApiService {
   // Chapters
   listChapters(bookId: string) {
     return this.http.get<{success: boolean; data: any[]}>(`/svc/v1/books/${encodeURIComponent(bookId)}/chapters`, { headers: this.headers() });
+  }
+  // Profiles
+  listMyAuthors() {
+    return this.http.get<{success: boolean; data: any[]}>(`/svc/v1/me/authors`, { headers: this.headers() });
+  }
+  applyAuthor(displayName: string, bio?: string) {
+    return this.http.post<{success: boolean; data: any}>(`/svc/v1/me/authors`, { displayName, bio }, { headers: this.headers() });
+  }
+  listMyPublishers() {
+    return this.http.get<{success: boolean; data: any[]}>(`/svc/v1/me/publishers`, { headers: this.headers() });
+    }
+  applyPublisher(name: string, description?: string) {
+    return this.http.post<{success: boolean; data: any}>(`/svc/v1/me/publishers`, { name, description }, { headers: this.headers() });
   }
   upsertChapter(bookId: string, number: number, title: string, pageNoStart?: number) {
     return this.http.post<{success: boolean}>(`/svc/v1/books/${encodeURIComponent(bookId)}/chapters`, { number, title, pageNoStart }, { headers: this.headers() });

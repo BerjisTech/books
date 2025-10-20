@@ -1,0 +1,9 @@
+{
+  "/svc": {
+    "target": "http://books-service:8088",
+    "secure": false,
+    "changeOrigin": true,
+    "logLevel": "warn"
+  }
+}
+

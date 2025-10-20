@@ -9,33 +9,7 @@ import { interval, Subscription } from 'rxjs';
   selector: 'app-marketplace',
   standalone: true,
   imports: [CommonModule, FormsModule, PaymentPanelComponent],
-  template: `
-    <h2>Marketplace</h2>
-    <div style="margin:8px 0">
-      <input [(ngModel)]="q" placeholder="Search books" />
-      <button (click)="search()">Search</button>
-    </div>
-    <div style="margin:8px 0; font-size:12px; opacity:.8">
-      Dev user ID: <input [(ngModel)]="devUserId" placeholder="dev user id" style="width:360px" />
-      <button (click)="saveDevUser()">Save</button>
-    </div>
-    <div *ngIf="loading">Loading…</div>
-    <div *ngIf="!loading && items.length === 0">No books found.</div>
-    <ul>
-      <li *ngFor="let b of items" style="margin:8px 0">
-        <strong>{{ b.title }}</strong>
-        <span *ngIf="b.subtitle"> - {{ b.subtitle }}</span>
-        <div style="opacity:.7">{{ b.description }}</div>
-        <div *ngIf="b.priceAmount">Price: {{ b.priceAmount }} {{ b.priceCurrency }}</div>
-        <div>
-          <button (click)="buy(b)">Buy (M-Pesa)</button>
-        </div>
-        <div *ngIf="selected && selected.id === b.id && paymentDetails" style="margin-top:10px;">
-          <app-payment-panel [details]="paymentDetails"></app-payment-panel>
-        </div>
-      </li>
-    </ul>
-  `
+  templateUrl: './marketplace.component.html'
 })
 export class MarketplacePageComponent {
   items: any[] = [];
