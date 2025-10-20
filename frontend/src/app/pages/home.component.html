@@ -1,3 +1,63 @@
-<h2>Welcome to Books</h2>
-<p>Discover authors, publishers, and great reads. Buy ebooks or hard copies, then join clubs to discuss with others.</p>
+<div>
+    <div class="flex items-start justify-between relative">
+        <div class="absolute top-0 right-0 h-[50vh] w-[70vw] rounded-bl-[100px] bg-[#EAE6D7]" style="z-index: -1;">
+        </div>
+        <div class="absolute top-0 right-0 h-[70vh] w-[21vw] bg-[#DAD4BE]" style="z-index: -1;"></div>
+        <div class="flex flex-col gap-[90px]">
+            <div class="px-5 mt-[80px] mb-[100px]">
+                <span class="text-6xl font-thin">Discover</span>
+                <form class="mt-[40px] bg-slate-50 rounded-md p-5 table w-auto min-w-[50vw] max-w-[90vw] shadow-lg">
+                    <div class="flex flex-wrap items-center content-center justify-between gap-3">
+                        <select class="bg-slate-50 px-5 py-2 flex-grow">
+                            <optgroup label="Education">
+                                <option value="1">Mathematics</option>
+                                <option value="2">Science</option>
+                                <option value="3">History</option>
+                            </optgroup>
+                            <optgroup label="Entertainment">
+                                <option value="4">Fiction</option>
+                                <option value="5">Non-Fiction</option>
+                                <option value="6">Poetry</option>
+                            </optgroup>
+                            <optgroup label="Others">
+                                <option value="7">Biography</option>
+                                <option value="8">Self-Help</option>
+                                <option value="9">Religion</option>
+                            </optgroup>
+                        </select>
+                        <span></span>
+                        <input class="bg-slate-50 flex-grow outline-none px-5 py-2" type="search"
+                            placeholder="Search for books" />
+                        <button class="bg-slate-950 rounded-md text-white px-5 py-2 flex-grow"
+                            type="submit">Search</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <div *ngIf="authed" class="flex items-center justify-end gap-2">
 
+            <div class="w-[50px] h-[50px] bg-slate-700 shadow cursor-pointer"></div>
+            <div>
+                <a [href]="accountUrl">Account</a>
+                <span *ngIf="userName"> ({{ userName }})</span>
+            </div>
+            <div></div>
+            <div></div>
+        </div>
+    </div>
+
+    <div class="px-4 pb-[50px]">
+        <div class="hidden _flex items-center content-center justify-center gap-3 my-3">
+            <div class="text-2xl">{{ pageTitle }}</div>
+            <div class="flex-grow"></div>
+            <span class="bg-slate-50 rounded-md text-lg px-2" role="button">View All</span>
+            <span class="bg-slate-50 rounded-md text-2xl px-2 material-symbols-outlined" role="button">page_info</span>
+        </div>
+        <app-books></app-books>
+        <div class="grid grid-cols-3 auto-rows-[510px] gap-3 w-full">
+            <div *ngFor="let book of books">
+                <app-book-card [book]="book"></app-book-card>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,31 +1,55 @@
-<header>
-  <h1>Berjis Books</h1>
-  <nav>
-    <a routerLink="/">Home</a>
-    <a routerLink="/marketplace">Marketplace</a>
-    <a routerLink="/clubs">Book Clubs</a>
-    <a routerLink="/meetups">Meetups</a>
-    <a routerLink="/orders">Orders</a>
-    <a routerLink="/dashboard">Dashboard</a>
-    <span *ngIf="authed" style="margin-left:12px; opacity:.9">|
-      <a [href]="accountUrl">Account</a>
-      <span *ngIf="userName"> ({{ userName }})</span>
-    </span>
-  </nav>
-  <div *ngIf="isDev" style="margin-top:8px; padding:8px; background:#f8fafc10; border:1px solid #e5e7eb22; border-radius:6px;">
-    <div style="font-weight:600;">Dev Info</div>
-    <div style="font-size:13px; opacity:.85;">Core API: {{ coreBase }}</div>
-    <div style="font-size:13px; opacity:.85;">Books API: {{ booksBase }}</div>
-    <div style="margin-top:6px; font-size:12px;">
-      <label>Set Books API Base: </label>
-      <input [(ngModel)]="newBooksBase" placeholder="http://localhost:8088 or https://..." style="width:380px" />
-      <button (click)="saveBooksBase()">Apply</button>
+<div class="grid grid-cols-4">
+  <div class="h-screen overflow-y-hidden">
+    <!-- Discover, My Library, Favorite, Wishlist, Settings, Help -->
+    <div class="px-4 overflow-y-auto flex flex-col gap-4 custom-height pt-4"
+      style="--custom-vh: 100vh; --custom-px: 150px;">
+      <a routerLink="/" class="flex items-center gap-2 hover:bg-slate-100 p-2 text-lg rounded-md">
+        <span class="material-symbols-outlined bg-slate-100 rounded-full p-2">home</span>
+        <span>Brwein</span>
+      </a>
+      <a routerLink="/" class="flex items-center gap-2 hover:bg-slate-100 p-2 text-lg rounded-md">
+        <span class="material-symbols-outlined bg-slate-100 rounded-full p-2">dashboard</span>
+        <span>Discover</span>
+      </a>
+      <a routerLink="/library" class="flex items-center gap-2 hover:bg-slate-100 p-2 text-lg rounded-md">
+        <span class="material-symbols-outlined bg-slate-100 rounded-full p-2">book</span>
+        <span>My Library</span>
+      </a>
+      <a routerLink="/favorite" class="flex items-center gap-2 hover:bg-slate-100 p-2 text-lg rounded-md">
+        <span class="material-symbols-outlined bg-slate-100 rounded-full p-2">favorite</span>
+        <span>Favorite</span>
+      </a>
+      <a routerLink="/wishlist" class="flex items-center gap-2 hover:bg-slate-100 p-2 text-lg rounded-md">
+        <span class="material-symbols-outlined bg-slate-100 rounded-full p-2">bookmark</span>
+        <span>Wishlist</span>
+      </a>
+    </div>
+    <div *ngIf="isDev" class="flex flex-col items-start justify-start">
+      <div style="font-weight:600;">Dev Info</div>
+      <div style="font-size:13px; opacity:.85;">Core API: {{ coreBase }}</div>
+      <div style="font-size:13px; opacity:.85;">Books API: {{ booksBase }}</div>
+      <div style="margin-top:6px; font-size:12px;">
+        <label>Set Books API Base: </label>
+        <input [(ngModel)]="newBooksBase" placeholder="http://localhost:8088 or https://..." style="width:380px" />
+        <button (click)="saveBooksBase()">Apply</button>
+      </div>
+    </div>
+    <div class="px-4 flex flex-col gap-4 w-full h-[150px]">
+      <span *ngIf="authed" style="margin-left:12px; opacity:.9">|
+        <a [href]="accountUrl">Account</a>
+        <span *ngIf="userName"> ({{ userName }})</span>
+      </span>
+      <a routerLink="/settings" class="flex items-center gap-2 hover:bg-slate-100 p-2 text-lg rounded-md">
+        <span class="material-symbols-outlined bg-slate-100 rounded-full p-2">settings</span>
+        <span>Settings</span>
+      </a>
+      <a routerLink="/help" class="flex items-center gap-2 hover:bg-slate-100 p-2 text-lg rounded-md">
+        <span class="material-symbols-outlined bg-slate-100 rounded-full p-2">help</span>
+        <span>Help</span>
+      </a>
     </div>
   </div>
-  <p style="opacity:.7;max-width:70ch">
-    Authors and publishers collaborate; readers buy ebooks or hard copies, share where allowed, form clubs, chat in rooms, and attend meetups.
-  </p>
-</header>
-<main>
-  <router-outlet />
-</main>
+  <main class="col-span-3">
+    <router-outlet />
+  </main>
+</div>
