@@ -10,7 +10,7 @@ import { AuthService } from '../auth.service';
   selector: 'app-home',
   standalone: true,
   templateUrl: './home.component.html',
-  imports: [CommonModule, BooksComponent, BookCardComponent]
+  imports: [CommonModule, BooksComponent]
 })
 export class HomePageComponent implements OnInit {
 
@@ -20,7 +20,7 @@ export class HomePageComponent implements OnInit {
   pageTitle: string = 'Book Recomendations';
   books: Book[] = []
 
-  constructor(private bookService: BooksService, private auth: AuthService) { }
+  constructor(private auth: AuthService) { }
 
   ngOnInit(): void {
     // Check auth/session against Core API
@@ -28,7 +28,6 @@ export class HomePageComponent implements OnInit {
     this.auth.user().subscribe(u => this.userName = u?.name || null);
     this.auth.check();
 
-    this.books = this.bookService.getDummyBooks(20);
   }
 
 }
