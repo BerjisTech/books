@@ -1,18 +1,18 @@
-<div class="fixed grid grid-cols-4 w-full h-full overflow-hidden">
+<div class="fixed grid grid-cols-5 w-full h-full overflow-hidden">
   <div class="h-screen overflow-x-hidden overflow-y-hidden">
     <!-- Discover, My Library, Favorite, Wishlist, Settings, Help -->
     <div class="px-4 overflow-y-auto flex flex-col gap-4 custom-height pt-4"
       style="--custom-vh: 100vh; --custom-px: 150px;">
       <a routerLink="/" class="flex items-center gap-2 hover:bg-slate-100 p-2 text-lg rounded-md">
         <span class="material-symbols-outlined bg-slate-100 rounded-full p-2">home</span>
-        <span>Brwein</span>
+        <span>Berjis Books</span>
       </a>
       <a routerLink="/" class="flex items-center gap-2 hover:bg-slate-100 p-2 text-lg rounded-md">
-        <span class="material-symbols-outlined bg-slate-100 rounded-full p-2">dashboard</span>
+        <span class="material-symbols-outlined bg-slate-100 rounded-full p-2">newsstand</span>
         <span>Discover</span>
       </a>
       <a routerLink="/library" class="flex items-center gap-2 hover:bg-slate-100 p-2 text-lg rounded-md">
-        <span class="material-symbols-outlined bg-slate-100 rounded-full p-2">book</span>
+        <span class="material-symbols-outlined bg-slate-100 rounded-full p-2">book_ribbon</span>
         <span>My Library</span>
       </a>
       <a routerLink="/favorite" class="flex items-center gap-2 hover:bg-slate-100 p-2 text-lg rounded-md">
@@ -23,6 +23,28 @@
         <span class="material-symbols-outlined bg-slate-100 rounded-full p-2">bookmark</span>
         <span>Wishlist</span>
       </a>
+      <ng-container *ngIf="authed">
+        <a routerLink="/marketplace" class="flex items-center gap-2 hover:bg-slate-100 p-2 text-lg rounded-md">
+          <span class="material-symbols-outlined bg-slate-100 rounded-full p-2">storefront</span>
+          <span>Buy|Rent Books</span>
+        </a>
+        <a routerLink="/clubs" class="flex items-center gap-2 hover:bg-slate-100 p-2 text-lg rounded-md">
+          <span class="material-symbols-outlined bg-slate-100 rounded-full p-2">groups_3</span>
+          <span>Book Clubs</span>
+        </a>
+        <a routerLink="/meetups" class="flex items-center gap-2 hover:bg-slate-100 p-2 text-lg rounded-md">
+          <span class="material-symbols-outlined bg-slate-100 rounded-full p-2">adaptive_audio_mic</span>
+          <span>Meetups</span>
+        </a>
+        <a routerLink="/orders" class="flex items-center gap-2 hover:bg-slate-100 p-2 text-lg rounded-md">
+          <span class="material-symbols-outlined bg-slate-100 rounded-full p-2">shopping_basket</span>
+          <span>Orders</span>
+        </a>
+        <a routerLink="/dashboard" class="flex items-center gap-2 hover:bg-slate-100 p-2 text-lg rounded-md">
+          <span class="material-symbols-outlined bg-slate-100 rounded-full p-2">dashboard</span>
+          <span>Dashboard</span>
+        </a>
+      </ng-container>
     </div>
     <div *ngIf="isDev" class="flex flex-col items-start justify-start">
       <div style="font-weight:600;">Dev Info</div>
@@ -49,7 +71,7 @@
       </a>
     </div>
   </div>
-  <main class="col-span-3 h-full overflow-x-hidden overflow-y-auto">
+  <main class="col-span-4 h-full overflow-x-hidden overflow-y-auto py-4">
     <router-outlet />
   </main>
 </div>

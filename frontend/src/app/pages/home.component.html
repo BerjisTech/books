@@ -1,6 +1,6 @@
 <div>
     <div class="flex items-start justify-between relative">
-        <div class="absolute top-0 right-0 h-[50vh] w-[70vw] rounded-bl-[100px] bg-[#EAE6D7]" style="z-index: -1;">
+        <div class="absolute top-0 right-0 h-[50vh] w-full rounded-bl-[100px] bg-[#EAE6D7]" style="z-index: -1;">
         </div>
         <div class="absolute top-0 right-0 h-[70vh] w-[21vw] bg-[#DAD4BE]" style="z-index: -1;"></div>
         <div class="flex flex-col gap-[90px]">
@@ -46,13 +46,7 @@
         </div>
     </div>
 
-    <div class="px-4 pb-[50px]">
-        <div class="hidden _flex items-center content-center justify-center gap-3 my-3">
-            <div class="text-2xl">{{ pageTitle }}</div>
-            <div class="flex-grow"></div>
-            <span class="bg-slate-50 rounded-md text-lg px-2" role="button">View All</span>
-            <span class="bg-slate-50 rounded-md text-2xl px-2 material-symbols-outlined" role="button">page_info</span>
-        </div>
+    <div class="px-[100px] pb-[50px]">
         <app-books></app-books>
     </div>
 </div>
