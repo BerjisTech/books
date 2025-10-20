@@ -5,7 +5,7 @@
         <span class="bg-slate-50 rounded-md text-lg px-2" role="button">View All</span>
         <span class="bg-slate-50 rounded-md text-2xl px-2 material-symbols-outlined" role="button">page_info</span>
     </div>
-    <div class="grid grid-cols-3 auto-rows-[510px] gap-3 w-full">
+    <div class="grid grid-cols-4 auto-rows-[510px] gap-3 w-full">
         <div *ngFor="let book of books">
             <app-book-card [book]="book"></app-book-card>
         </div>
