@@ -17,7 +17,7 @@ export class AppComponent implements OnInit {
   booksBase = '';
   newBooksBase = '';
   authed = false;
-  accountUrl = 'http://berjis.test/account';
+  accountUrl = 'http://berjis.tech/account';
   userName: string | null = null;
   constructor(private auth: AuthService) {}
   ngOnInit(): void {

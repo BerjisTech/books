@@ -17,5 +17,5 @@ Structure
 Dev quick start
 
 - Compose services are defined in root `docker-compose.yml` as `books-db`, `books-service`, `books-frontend`.
-- Edge proxy hosts: `books.berjis.test` and `books-api.berjis.test`.
+- Edge proxy hosts: `books.berjis.tech` and `books-api.berjis.tech`.
 

@@ -15,7 +15,7 @@ import { AuthService } from '../auth.service';
 export class HomePageComponent implements OnInit {
 
   authed = false;
-  accountUrl = 'http://berjis.test/account';
+  accountUrl = 'http://berjis.tech/account';
   userName: string | null = null;
   pageTitle: string = 'Book Recomendations';
   books: Book[] = []
