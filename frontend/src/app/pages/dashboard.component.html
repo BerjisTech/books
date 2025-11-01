@@ -1,117 +1,436 @@
-<h2>Dashboard</h2>
-
-<div *ngIf="!authed" style="padding:8px; border:1px solid #e5e7eb22; border-radius:6px; background:#0b1020;">
-  <div style="font-weight:600;">You’re not signed in</div>
-  <p style="opacity:.85;">View the marketplace publicly. To manage your profile, purchases, or publish books, sign in at <a href="http://berjis.tech/account">berjis.tech</a>.</p>
+<div class="space-y-8">
+  <div *ngIf="!authed" class="border border-slate-800 bg-slate-900/60 rounded-2xl p-6 text-slate-200">
+    <h2 class="text-2xl font-semibold mb-2">You're not signed in</h2>
+    <p class="text-slate-400">View the marketplace publicly. To manage your profile, purchases, or publish books, sign in at
+      <a class="text-slate-100 underline" href="http://berjis.tech/account">berjis.tech</a>.
+    </p>
   </div>
 
-<div *ngIf="authed" style="margin:8px 0;">
-  <div style="margin-bottom:8px;">Roles: <span *ngIf="roles.length === 0">reader (default)</span><span *ngFor="let r of roles" style="display:inline-block; margin-right:6px; padding:2px 8px; border:1px solid #e5e7eb22; border-radius:999px; font-size:12px;">{{ r }}</span></div>
+  <div *ngIf="authed" class="space-y-10">
+    <section *ngIf="true && false" class="border border-slate-800 bg-slate-900/60 rounded-2xl p-6">
+      <div class="flex flex-wrap items-center gap-3">
+        <h2 class="text-2xl font-semibold text-slate-100">Roles</h2>
+        <div *ngIf="roles.length === 0" class="px-3 py-1 rounded-full bg-slate-800 text-slate-300 text-sm">reader</div>
+        <div *ngFor="let r of roles" class="px-3 py-1 rounded-full bg-slate-100 text-slate-900 text-sm">{{ r }}</div>
+      </div>
+    </section>
 
-  <section style="margin:16px 0;">
-    <h3 style="margin:0 0 6px 0;">Reader</h3>
-    <p style="opacity:.85;">Your library and recent purchases.</p>
-    <div *ngIf="libLoading">Loading library…</div>
-    <div *ngIf="!libLoading && library.length === 0" style="opacity:.8">No purchases yet.</div>
-    <ul>
-      <li *ngFor="let item of library" style="margin:6px 0;">
-        <strong>{{ item.title || item.bookId }}</strong>
-        <span style="opacity:.8"> — {{ item.kind }} • {{ item.status }}</span>
-        <button *ngIf="item.kind==='ebook' && item.status==='completed'" (click)="read(item.bookId)" style="margin-left:8px;">Read</button>
-      </li>
-    </ul>
-  </section>
-
-  <section *ngIf="hasRole('author') || hasRole('creator')" style="margin:16px 0;">
-    <h3 style="margin:0 0 6px 0;">Author</h3>
-    <p style="opacity:.85;">Create and manage your books.</p>
-    <div style="margin:8px 0; display:flex; flex-direction:column; gap:8px;">
-      <div>
-        <input [(ngModel)]="newTitle" placeholder="Book title" />
-        <input [(ngModel)]="newDesc" placeholder="Description (optional)" style="width:320px;" />
+    <section class="border border-slate-800 bg-slate-900/60 rounded-2xl p-6 space-y-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <h3 class="text-2xl font-semibold text-slate-100">My Library</h3>
+          <p class="text-slate-400 text-sm">Your recent purchases and downloads</p>
+        </div>
+        <button class="text-sm text-slate-300 border border-slate-700 rounded-full px-3 py-1 hover:border-slate-500" (click)="loadLibrary()">
+          Refresh
+        </button>
       </div>
-      <div>
-        <label><input type="radio" name="profile" value="author" [(ngModel)]="profileKind" /> As Author</label>
-        <select [(ngModel)]="selectedAuthorId" [disabled]="profileKind!=='author'">
-          <option [ngValue]="null">Select author…</option>
-          <option *ngFor="let a of myAuthors" [ngValue]="a.id">{{ a.displayName || a.name }}</option>
-        </select>
-        <button (click)="applyAuthor()" style="margin-left:6px;">Apply as Author</button>
-      </div>
-      <div>
-        <label><input type="radio" name="profile" value="publisher" [(ngModel)]="profileKind" /> As Publisher</label>
-        <select [(ngModel)]="selectedPublisherId" [disabled]="profileKind!=='publisher'">
-          <option [ngValue]="null">Select publisher…</option>
-          <option *ngFor="let p of myPublishers" [ngValue]="p.id">{{ p.name }}</option>
-        </select>
-        <button (click)="applyPublisher()" style="margin-left:6px;">Apply as Publisher</button>
-      </div>
-      <div>
-        <button (click)="createBook()">Create</button>
-        <span *ngIf="createMsg" style="margin-left:8px; font-size:12px; opacity:.85;">{{ createMsg }}</span>
-      </div>
-    </div>
-    <div style="margin-top:8px;">
-      <div style="font-weight:600; margin:8px 0 4px 0;">My Books</div>
-      <div *ngIf="myLoading">Loading…</div>
-      <div *ngIf="!myLoading && myBooks.length===0" style="opacity:.8">No books yet.</div>
-      <ul>
-        <li *ngFor="let b of myBooks" style="margin:6px 0;">
-          <div>
-            <strong>{{ b.title }}</strong>
-            <span *ngIf="b.subtitle"> — {{ b.subtitle }}</span>
-            <span style="opacity:.8"> • {{ b.visibility }}</span>
-            <button style="margin-left:8px;" (click)="toggleEditor(b.id)">{{ editBookId===b.id ? 'Close' : 'Add Page' }}</button>
-            <button style="margin-left:8px;" (click)="toggleChapters(b.id)">{{ chapterBookId===b.id ? 'Hide Chapters' : 'Chapters' }}</button>
-            <a [routerLink]="['/book', b.id]" style="margin-left:8px;">Open Reader</a>
+      <div *ngIf="libLoading" class="text-slate-400">Loading library...</div>
+      <div *ngIf="!libLoading && library.length === 0" class="text-slate-500">No purchases yet.</div>
+      <div class="grid md:grid-cols-2 gap-4">
+        <div *ngFor="let item of library" class="border border-slate-800 rounded-xl p-4 bg-slate-900/80 flex flex-col gap-2">
+          <div class="flex items-center justify-between text-slate-200">
+            <span class="font-semibold">{{ item.title || item.bookId }}</span>
+            <span class="text-xs uppercase tracking-wide px-2 py-1 rounded-full border border-slate-700 text-slate-400">{{ item.status }}</span>
           </div>
-          <div *ngIf="editBookId===b.id" style="margin-top:6px; padding:8px; border:1px solid #e5e7eb22; border-radius:6px;">
-            <div>
-              Page #: <input type="number" [(ngModel)]="newPageNo" min="1" style="width:80px;" />
-            </div>
-            <div style="margin-top:6px;">
-              <div style="display:flex; gap:8px; align-items:center; margin-bottom:6px;">
-                <label style="font-size:12px; opacity:.8;">
-                  <input type="checkbox" [(ngModel)]="useMarkdown" /> Markdown
-                </label>
-                <label *ngIf="useMarkdown" style="font-size:12px; opacity:.8;">
-                  <input type="checkbox" [(ngModel)]="previewMd" /> Preview
-                </label>
-                <button (click)="insertImage(mdArea)" style="font-size:12px;">Insert Image</button>
-                <button (click)="insertCode(mdArea)" style="font-size:12px;">Insert Code</button>
+          <div class="text-sm text-slate-400">
+            {{ item.kind | titlecase }} • {{ item.createdAt | date:'medium' }}
+          </div>
+          <div class="flex items-center justify-between text-sm text-slate-300">
+            <span>{{ formatCurrency(item.pricePaid, item.currency) }}</span>
+            <button *ngIf="item.kind==='ebook' && item.status==='completed'" class="px-3 py-1 rounded-full bg-slate-100 text-slate-900 hover:bg-white" (click)="read(item.bookId)">Read</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="border border-slate-800 bg-slate-900/60 rounded-2xl p-6 space-y-6" *ngIf="hasRole('author') || hasRole('creator')">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h3 class="text-2xl font-semibold text-slate-100">Creator Toolkit</h3>
+          <p class="text-slate-400 text-sm">Draft, structure, and publish your titles.</p>
+        </div>
+        <button class="text-sm text-slate-300 border border-slate-700 rounded-full px-3 py-1 hover:border-slate-500" (click)="loadMyBooks()">Reload books</button>
+      </div>
+      <div *ngIf="notices.creator" class="rounded-xl border px-4 py-3 text-sm flex items-center justify-between"
+        [ngClass]="{
+          'border-emerald-500/40 bg-emerald-500/5 text-emerald-200': notices.creator?.tone==='success',
+          'border-rose-500/40 bg-rose-500/5 text-rose-200': notices.creator?.tone==='error',
+          'border-slate-700 bg-slate-950/60 text-slate-200': notices.creator?.tone==='info'
+        }">
+        <span>{{ notices.creator?.text }}</span>
+        <button class="text-xs uppercase tracking-wide text-slate-400 hover:text-slate-200" (click)="clearNotice('creator')">Dismiss</button>
+      </div>
+
+      <div class="grid md:grid-cols-2 gap-4 border border-slate-800 rounded-xl p-4 bg-slate-950/60">
+        <div class="space-y-3">
+          <label class="text-sm text-slate-300">Book title</label>
+          <input class="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-slate-100" [(ngModel)]="newTitle" placeholder="e.g. Letters from Orbit">
+        </div>
+        <div class="space-y-3">
+          <label class="text-sm text-slate-300">Short description</label>
+          <input class="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-slate-100" [(ngModel)]="newDesc" placeholder="Optional teaser text">
+        </div>
+        <div class="flex flex-col gap-2">
+          <label class="text-sm text-slate-300">Publish as</label>
+          <div class="flex items-center gap-3 text-sm text-slate-200">
+            <label class="flex items-center gap-1">
+              <input type="radio" name="profile" value="author" [(ngModel)]="profileKind"> Author
+            </label>
+            <select class="bg-slate-900 border border-slate-700 rounded px-3 py-2 text-slate-100" [(ngModel)]="selectedAuthorId" [disabled]="profileKind!=='author'">
+              <option [ngValue]="null">Select author profile</option>
+              <option *ngFor="let a of myAuthors" [ngValue]="a.id">{{ a.displayName || a.name }}</option>
+            </select>
+            <a routerLink="/enroll/author" class="px-3 py-1 border border-slate-700 rounded-full text-slate-300 hover:border-slate-500 block text-center">New author profile</a>
+          </div>
+        </div>
+        <div class="flex flex-col gap-2">
+          <label class="text-sm text-slate-300 invisible md:visible"> </label>
+          <div class="flex items-center gap-3 text-sm text-slate-200">
+            <label class="flex items-center gap-1">
+              <input type="radio" name="profile" value="publisher" [(ngModel)]="profileKind"> Publisher
+            </label>
+            <select class="bg-slate-900 border border-slate-700 rounded px-3 py-2 text-slate-100" [(ngModel)]="selectedPublisherId" [disabled]="profileKind!=='publisher'">
+              <option [ngValue]="null">Select publisher profile</option>
+              <option *ngFor="let p of myPublishers" [ngValue]="p.id">{{ p.name }}</option>
+            </select>
+            <a routerLink="/enroll/publisher" class="px-3 py-1 border border-slate-700 rounded-full text-slate-300 hover:border-slate-500 block text-center">New publisher profile</a>
+          </div>
+        </div>
+        <div class="md:col-span-2 flex items-center gap-3">
+          <button class="px-4 py-2 rounded-full bg-slate-100 text-slate-900 hover:bg-white" (click)="createBook()">Create book</button>
+          <span class="text-sm text-slate-400" *ngIf="createMsg">{{ createMsg }}</span>
+        </div>
+      </div>
+
+      <div>
+        <div class="flex items-center justify-between mb-3">
+          <div class="text-lg font-semibold text-slate-200">My drafts</div>
+          <span *ngIf="myLoading" class="text-sm text-slate-400">Loading...</span>
+        </div>
+        <div *ngIf="!myLoading && myBooks.length===0" class="text-slate-500">No books yet. Start by creating one above.</div>
+        <div class="space-y-4">
+          <div *ngFor="let b of myBooks" class="border border-slate-800 rounded-2xl bg-slate-950/60 p-5 space-y-3">
+            <div class="flex flex-wrap items-center justify-between gap-3 text-slate-200">
+              <div>
+                <div class="text-xl font-semibold">{{ b.title }}</div>
+                <div class="text-sm text-slate-400">Slug: {{ b.slug || 'not set' }}</div>
               </div>
-              <textarea #mdArea [(ngModel)]="newPageHtml" rows="6" style="width:100%;" placeholder="Page HTML or Markdown"></textarea>
-              <div *ngIf="useMarkdown && previewMd" style="margin-top:8px; padding:8px; border:1px dashed #e5e7eb33; border-radius:6px; background:#0f172a;">
-                <div style="font-size:12px; opacity:.8; margin-bottom:4px;">Preview</div>
+              <div class="flex items-center gap-2">
+                <span class="px-3 py-1 rounded-full border border-slate-700 text-xs uppercase tracking-wide text-slate-300">{{ b.status }}</span>
+                <span class="px-3 py-1 rounded-full border border-slate-700 text-xs uppercase tracking-wide text-slate-300">{{ b.visibility }}</span>
+              </div>
+            </div>
+            <div class="flex flex-wrap gap-3 text-sm text-slate-400">
+              <span *ngIf="b.priceAmount">Price: {{ formatCurrency(b.priceAmount, b.priceCurrency) }}</span>
+              <span *ngIf="b.pageCount">Pages: {{ b.pageCount }}</span>
+            </div>
+            <div class="flex flex-wrap gap-3">
+              <button class="px-3 py-1 rounded-full border border-slate-700 text-slate-300 hover:border-slate-500" (click)="toggleEditor(b.id)">
+                {{ editBookId===b.id ? 'Close editor' : 'Write chapter' }}
+              </button>
+              <button class="px-3 py-1 rounded-full border border-slate-700 text-slate-300 hover:border-slate-500" (click)="toggleChapters(b.id)">
+                {{ chapterBookId===b.id ? 'Hide outline' : 'Outline' }}
+              </button>
+              <button class="px-3 py-1 rounded-full border border-slate-700 text-slate-300 hover:border-slate-500" (click)="toggleAssets(b.id)">
+                {{ assetPanelBookId===b.id ? 'Hide assets' : 'Assets' }}
+              </button>
+              <button class="px-3 py-1 rounded-full border border-slate-700 text-slate-300 hover:border-slate-500" (click)="read(b.slug || b.id)">Preview reader</button>
+              <button *ngIf="b.status!=='published'" class="px-3 py-1 rounded-full bg-emerald-500 text-slate-900 hover:bg-emerald-400" (click)="publishBook(b)">Publish</button>
+              <button *ngIf="b.status==='published'" class="px-3 py-1 rounded-full bg-rose-500 text-white hover:bg-rose-400" (click)="unpublishBook(b)">Unpublish</button>
+            </div>
+
+          <div *ngIf="editBookId===b.id" class="border border-slate-800 rounded-xl p-4 bg-slate-900/80 space-y-3">
+            <div *ngIf="notices.pages" class="rounded-xl border px-3 py-2 text-xs flex items-center justify-between"
+              [ngClass]="{
+                'border-emerald-500/40 bg-emerald-500/5 text-emerald-200': notices.pages?.tone==='success',
+                'border-rose-500/40 bg-rose-500/5 text-rose-200': notices.pages?.tone==='error',
+                'border-slate-700 bg-slate-950/60 text-slate-200': notices.pages?.tone==='info'
+              }">
+              <span>{{ notices.pages?.text }}</span>
+              <button class="text-[10px] uppercase tracking-wide text-slate-400 hover:text-slate-200" (click)="clearNotice('pages')">Dismiss</button>
+            </div>
+              <div class="grid md:grid-cols-4 gap-3 text-sm text-slate-300">
+                <label class="flex flex-col gap-1">
+                  <span>Page number</span>
+                  <input type="number" min="1" class="bg-slate-950 border border-slate-700 rounded px-3 py-2 text-slate-100" [(ngModel)]="newPageNo">
+                </label>
+                <label class="flex flex-col gap-1">
+                  <span>Section</span>
+                  <select class="bg-slate-950 border border-slate-700 rounded px-3 py-2 text-slate-100" [(ngModel)]="newPageSection">
+                    <option value="frontmatter">Front matter</option>
+                    <option value="content">Main content</option>
+                    <option value="backmatter">Back matter</option>
+                  </select>
+                </label>
+                <label class="flex flex-col gap-1">
+                  <span>Label (optional)</span>
+                  <input class="bg-slate-950 border border-slate-700 rounded px-3 py-2 text-slate-100" [(ngModel)]="newPageLabel" placeholder="Preface, Epilogue...">
+                </label>
+                <div class="flex items-center gap-3">
+                  <label class="flex items-center gap-1 text-xs text-slate-300">
+                    <input type="checkbox" [(ngModel)]="useMarkdown"> Markdown
+                  </label>
+                  <label *ngIf="useMarkdown" class="flex items-center gap-1 text-xs text-slate-300">
+                    <input type="checkbox" [(ngModel)]="previewMd"> Preview
+                  </label>
+                  <button class="text-xs px-2 py-1 rounded-full border border-slate-700 text-slate-300" (click)="insertImage(mdArea)">Image</button>
+                  <button class="text-xs px-2 py-1 rounded-full border border-slate-700 text-slate-300" (click)="insertCode(mdArea)">Code</button>
+                </div>
+                <div *ngIf="showImageHelper" class="border border-slate-800 rounded-xl bg-slate-950/80 p-4 text-xs text-slate-300 space-y-3">
+                  <div class="flex items-center justify-between">
+                    <div class="uppercase tracking-wide text-slate-400">Insert image</div>
+                    <button class="text-[10px] uppercase text-slate-500 hover:text-slate-300" type="button" (click)="cancelImage()">Close</button>
+                  </div>
+                  <div class="grid md:grid-cols-2 gap-3">
+                    <label class="flex flex-col gap-1">
+                      <span>Image URL</span>
+                      <input class="bg-slate-950 border border-slate-700 rounded px-3 py-2 text-slate-100" [(ngModel)]="imageHelper.url" placeholder="https://...">
+                    </label>
+                    <label class="flex flex-col gap-1">
+                      <span>Alt text</span>
+                      <input class="bg-slate-950 border border-slate-700 rounded px-3 py-2 text-slate-100" [(ngModel)]="imageHelper.alt" placeholder="Describe the image">
+                    </label>
+                  </div>
+                  <div class="flex gap-2 justify-end">
+                    <button class="px-3 py-1 rounded-full border border-slate-700 text-slate-200 hover:border-slate-500" type="button" (click)="cancelImage()">Cancel</button>
+                    <button class="px-3 py-1 rounded-full bg-slate-100 text-slate-900 hover:bg-white" type="button" (click)="applyImage()">Insert</button>
+                  </div>
+                </div>
+                <div *ngIf="showCodeHelper" class="border border-slate-800 rounded-xl bg-slate-950/80 p-4 text-xs text-slate-300 space-y-3">
+                  <div class="flex items-center justify-between">
+                    <div class="uppercase tracking-wide text-slate-400">Insert code block</div>
+                    <button class="text-[10px] uppercase text-slate-500 hover:text-slate-300" type="button" (click)="cancelCode()">Close</button>
+                  </div>
+                  <div class="grid md:grid-cols-2 gap-3">
+                    <label class="flex flex-col gap-1">
+                      <span>Language</span>
+                      <input class="bg-slate-950 border border-slate-700 rounded px-3 py-2 text-slate-100" [(ngModel)]="codeHelper.lang" placeholder="e.g., js, python">
+                    </label>
+                    <label class="md:col-span-2 flex flex-col gap-1">
+                      <span>Snippet</span>
+                      <textarea rows="4" class="bg-slate-950 border border-slate-700 rounded px-3 py-2 text-slate-100" [(ngModel)]="codeHelper.snippet" placeholder="Paste or type your code"></textarea>
+                    </label>
+                  </div>
+                  <div class="flex gap-2 justify-end">
+                    <button class="px-3 py-1 rounded-full border border-slate-700 text-slate-200 hover:border-slate-500" type="button" (click)="cancelCode()">Cancel</button>
+                    <button class="px-3 py-1 rounded-full bg-slate-100 text-slate-900 hover:bg-white" type="button" (click)="applyCode()">Insert</button>
+                  </div>
+                </div>
+              </div>
+              <div class="grid md:grid-cols-3 gap-3 text-sm text-slate-300">
+                <label class="flex flex-col gap-1">
+                  <span>Audio URL</span>
+                  <input class="bg-slate-950 border border-slate-700 rounded px-3 py-2 text-slate-100" [(ngModel)]="newPageAudio" placeholder="Optional narration URL">
+                </label>
+                <label class="flex flex-col gap-1">
+                  <span>Video URL</span>
+                  <input class="bg-slate-950 border border-slate-700 rounded px-3 py-2 text-slate-100" [(ngModel)]="newPageVideo" placeholder="Optional video companion">
+                </label>
+              </div>
+              <textarea #mdArea [(ngModel)]="newPageHtml" rows="8" class="w-full bg-slate-950 border border-slate-700 rounded px-3 py-2 text-slate-100" placeholder="Page content (Markdown or HTML)"></textarea>
+              <div *ngIf="useMarkdown && previewMd" class="border border-dashed border-slate-700 rounded-xl p-4 bg-slate-950/80 text-sm text-slate-200">
+                <div class="text-xs uppercase tracking-wide text-slate-500 mb-2">Preview</div>
                 <div [innerHTML]="mdToHtml(newPageHtml)"></div>
               </div>
+              <button class="px-4 py-2 rounded-full bg-slate-100 text-slate-900 hover:bg-white" (click)="savePage(b.id)">Save page</button>
             </div>
-            <div style="margin-top:6px;">
-              <button (click)="savePage(b.id)">Save Page</button>
+
+          <div *ngIf="chapterBookId===b.id" class="border border-slate-800 rounded-xl p-4 bg-slate-900/80 space-y-3">
+            <div *ngIf="notices.chapters" class="rounded-xl border px-3 py-2 text-xs flex items-center justify-between"
+              [ngClass]="{
+                'border-emerald-500/40 bg-emerald-500/5 text-emerald-200': notices.chapters?.tone==='success',
+                'border-rose-500/40 bg-rose-500/5 text-rose-200': notices.chapters?.tone==='error',
+                'border-slate-700 bg-slate-950/60 text-slate-200': notices.chapters?.tone==='info'
+              }">
+              <span>{{ notices.chapters?.text }}</span>
+              <button class="text-[10px] uppercase tracking-wide text-slate-400 hover:text-slate-200" (click)="clearNotice('chapters')">Dismiss</button>
+            </div>
+              <div class="flex items-center justify-between">
+                <div class="font-semibold text-slate-200">Outline</div>
+                <span *ngIf="chapLoading" class="text-xs text-slate-400">Loading...</span>
+              </div>
+              <ul class="space-y-1 text-sm text-slate-300">
+                <li *ngFor="let c of chapters">{{ c.number }}. {{ c.title }} <span *ngIf="c.pageNoStart" class="text-slate-500">(p{{ c.pageNoStart }})</span></li>
+              </ul>
+              <div class="grid md:grid-cols-3 gap-2 text-sm text-slate-300">
+                <label class="flex flex-col gap-1">
+                  <span>No.</span>
+                  <input type="number" min="1" class="bg-slate-950 border border-slate-700 rounded px-2 py-1 text-slate-100" [(ngModel)]="chNumber">
+                </label>
+                <label class="flex flex-col gap-1">
+                  <span>Title</span>
+                  <input class="bg-slate-950 border border-slate-700 rounded px-2 py-1 text-slate-100" [(ngModel)]="chTitle">
+                </label>
+                <label class="flex flex-col gap-1">
+                  <span>Start page</span>
+                  <input type="number" min="1" class="bg-slate-950 border border-slate-700 rounded px-2 py-1 text-slate-100" [(ngModel)]="chStart">
+                </label>
+              </div>
+              <button class="px-4 py-2 rounded-full bg-slate-100 text-slate-900 hover:bg-white" (click)="saveChapter(b.id)">Save outline entry</button>
+            </div>
+
+          <div *ngIf="assetPanelBookId===b.id" class="border border-slate-800 rounded-xl p-4 bg-slate-900/80 space-y-3">
+            <div *ngIf="notices.assets" class="rounded-xl border px-3 py-2 text-xs flex items-center justify-between"
+              [ngClass]="{
+                'border-emerald-500/40 bg-emerald-500/5 text-emerald-200': notices.assets?.tone==='success',
+                'border-rose-500/40 bg-rose-500/5 text-rose-200': notices.assets?.tone==='error',
+                'border-slate-700 bg-slate-950/60 text-slate-200': notices.assets?.tone==='info'
+              }">
+              <span>{{ notices.assets?.text }}</span>
+              <button class="text-[10px] uppercase tracking-wide text-slate-400 hover:text-slate-200" (click)="clearNotice('assets')">Dismiss</button>
+            </div>
+              <div class="flex items-center justify-between">
+                <div class="font-semibold text-slate-200">Assets</div>
+                <button class="text-xs text-slate-400 border border-slate-700 px-2 py-1 rounded-full hover:border-slate-500" (click)="loadAssets(b.id)">Refresh</button>
+              </div>
+              <div class="flex flex-col lg:flex-row gap-4">
+                <table class="min-w-0 flex-1 text-sm text-slate-300 border border-slate-800 rounded-xl overflow-hidden">
+                  <thead class="bg-slate-900/70 text-xs uppercase tracking-wide text-slate-400">
+                    <tr>
+                      <th class="px-3 py-2 text-left">Kind</th>
+                      <th class="px-3 py-2 text-left">Source</th>
+                      <th class="px-3 py-2 text-left">URL</th>
+                      <th class="px-3 py-2"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let asset of assetsByBook[b.id] || []" class="border-t border-slate-800">
+                      <td class="px-3 py-2 capitalize">{{ asset.kind }}</td>
+                      <td class="px-3 py-2 capitalize">{{ asset.source }}</td>
+                      <td class="px-3 py-2 truncate max-w-[200px]"><a class="text-slate-100 underline" [href]="asset.url" target="_blank">{{ asset.url }}</a></td>
+                      <td class="px-3 py-2 text-right">
+                        <button class="text-xs text-rose-400 hover:text-rose-300" (click)="removeAsset(b.id, asset.id)">Remove</button>
+                      </td>
+                    </tr>
+                    <tr *ngIf="!(assetsByBook[b.id]?.length)" class="border-t border-slate-800 text-slate-500">
+                      <td colspan="4" class="px-3 py-2">No assets attached yet.</td>
+                    </tr>
+                  </tbody>
+                </table>
+                <div class="border border-slate-800 rounded-xl p-3 bg-slate-950/60 w-full lg:w-72 space-y-2 text-sm text-slate-300">
+                  <div class="font-semibold text-slate-200 text-sm">Attach asset</div>
+                  <label class="flex flex-col gap-1">
+                    <span>Kind</span>
+                    <select class="bg-slate-950 border border-slate-700 rounded px-2 py-1 text-slate-100" [(ngModel)]="assetForm[b.id].kind" name="kind">
+                      <option value="ebook">eBook</option>
+                      <option value="audio">Audio</option>
+                      <option value="video">Video</option>
+                      <option value="supplement">Supplement</option>
+                      <option value="hardcopy">Hardcopy</option>
+                    </select>
+                  </label>
+                  <label class="flex flex-col gap-1">
+                    <span>Source</span>
+                    <select class="bg-slate-950 border border-slate-700 rounded px-2 py-1 text-slate-100" [(ngModel)]="assetForm[b.id].source" name="source">
+                      <option value="external">External URL</option>
+                      <option value="upload">Uploaded</option>
+                    </select>
+                  </label>
+                  <label class="flex flex-col gap-1">
+                    <span>URL</span>
+                    <input class="bg-slate-950 border border-slate-700 rounded px-2 py-1 text-slate-100" [(ngModel)]="assetForm[b.id].url" placeholder="https://..." name="url">
+                  </label>
+                  <label class="flex flex-col gap-1">
+                    <span>Checksum (optional)</span>
+                    <input class="bg-slate-950 border border-slate-700 rounded px-2 py-1 text-slate-100" [(ngModel)]="assetForm[b.id].checksum" name="checksum">
+                  </label>
+                  <label class="flex flex-col gap-1">
+                    <span>Size in bytes (optional)</span>
+                    <input type="number" class="bg-slate-950 border border-slate-700 rounded px-2 py-1 text-slate-100" [(ngModel)]="assetForm[b.id].fileSizeBytes" name="filesize">
+                  </label>
+                  <button class="w-full px-3 py-2 rounded-full bg-slate-100 text-slate-900 hover:bg-white" (click)="addAsset(b.id)">Attach</button>
+                </div>
+              </div>
             </div>
           </div>
-          <div *ngIf="chapterBookId===b.id" style="margin-top:6px; padding:8px; border:1px solid #e5e7eb22; border-radius:6px;">
-            <div style="font-weight:600; margin-bottom:6px;">Chapters</div>
-            <div *ngIf="chapLoading">Loading chapters…</div>
-            <ul>
-              <li *ngFor="let c of chapters" style="font-size:14px; margin:2px 0;">{{ c.number }}. {{ c.title }} <span *ngIf="c.pageNoStart" style="opacity:.7">(p{{ c.pageNoStart }})</span></li>
-            </ul>
-            <div style="margin-top:8px; font-size:13px;">Add/Update chapter</div>
-            <div>Number: <input type="number" [(ngModel)]="chNumber" min="1" style="width:80px;" /> Title: <input [(ngModel)]="chTitle" style="width:240px;" /> Start Page: <input type="number" [(ngModel)]="chStart" min="1" style="width:80px;" /></div>
-            <div style="margin-top:6px;"><button (click)="saveChapter(b.id)">Save Chapter</button></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="border border-slate-800 bg-slate-900/60 rounded-2xl p-6 space-y-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <h3 class="text-2xl font-semibold text-slate-100">Collaborations</h3>
+          <p class="text-slate-400 text-sm">Requests between publishers and authors.</p>
+        </div>
+        <button class="text-sm text-slate-300 border border-slate-700 rounded-full px-3 py-1 hover:border-slate-500" (click)="loadCollaborations()">Refresh</button>
+      </div>
+      <div *ngIf="notices.collaborations" class="rounded-xl border px-3 py-2 text-xs flex items-center justify-between"
+        [ngClass]="{
+          'border-emerald-500/40 bg-emerald-500/5 text-emerald-200': notices.collaborations?.tone==='success',
+          'border-rose-500/40 bg-rose-500/5 text-rose-200': notices.collaborations?.tone==='error',
+          'border-slate-700 bg-slate-950/60 text-slate-200': notices.collaborations?.tone==='info'
+        }">
+        <span>{{ notices.collaborations?.text }}</span>
+        <button class="text-[10px] uppercase tracking-wide text-slate-400 hover:text-slate-200" (click)="clearNotice('collaborations')">Dismiss</button>
+      </div>
+      <div *ngIf="collabLoading" class="text-slate-400 text-sm">Loading collaborations...</div>
+      <div *ngIf="!collabLoading && collaborations.length === 0" class="text-slate-500 text-sm">No collaboration requests yet.</div>
+      <div class="grid md:grid-cols-2 gap-4">
+        <div *ngFor="let c of collaborations" class="border border-slate-800 rounded-2xl bg-slate-950/60 p-4 space-y-2 text-sm text-slate-200">
+          <div class="flex items-center justify-between">
+            <div class="font-semibold text-slate-100">{{ c.authorName || 'Author' }} ↔ {{ c.publisherName || 'Publisher' }}</div>
+            <span class="px-3 py-1 rounded-full border border-slate-700 text-xs uppercase tracking-wide text-slate-300">{{ c.status }}</span>
           </div>
-        </li>
-      </ul>
-    </div>
-  </section>
+          <div class="text-slate-400">
+            Requested on {{ c.createdAt | date:'medium' }}
+            <span *ngIf="c.notes">• "{{ c.notes }}"</span>
+          </div>
+          <div *ngIf="c.respondedAt" class="text-slate-500">Responded {{ c.respondedAt | date:'medium' }}</div>
+          <div class="flex gap-2" *ngIf="c.status==='pending'">
+            <button class="flex-1 px-3 py-1 rounded-full bg-emerald-500 text-slate-900 hover:bg-emerald-400" (click)="respondCollaboration(c, 'accept')">Accept</button>
+            <button class="flex-1 px-3 py-1 rounded-full bg-rose-500 text-white hover:bg-rose-400" (click)="respondCollaboration(c, 'decline')">Decline</button>
+          </div>
+        </div>
+      </div>
+    </section>
 
-  <section *ngIf="hasRole('publisher')" style="margin:16px 0;">
-    <h3 style="margin:0 0 6px 0;">Publisher</h3>
-    <p style="opacity:.85;">Organize catalog, pricing, and share permissions. (UI placeholder)</p>
-  </section>
-
-  <section *ngIf="hasRole('organizer') || hasRole('club_admin')" style="margin:16px 0;">
-    <h3 style="margin:0 0 6px 0;">Community</h3>
-    <p style="opacity:.85;">Manage clubs and meetups. (UI placeholder)</p>
-  </section>
+    <section class="border border-slate-800 bg-slate-900/60 rounded-2xl p-6 space-y-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <h3 class="text-2xl font-semibold text-slate-100">Earnings</h3>
+          <p class="text-slate-400 text-sm">Royalties across completed purchases.</p>
+        </div>
+        <button class="text-sm text-slate-300 border border-slate-700 rounded-full px-3 py-1 hover:border-slate-500" (click)="loadEarnings()">Refresh</button>
+      </div>
+      <div *ngIf="notices.earnings" class="rounded-xl border px-3 py-2 text-xs flex items-center justify-between"
+        [ngClass]="{
+          'border-emerald-500/40 bg-emerald-500/5 text-emerald-200': notices.earnings?.tone==='success',
+          'border-rose-500/40 bg-rose-500/5 text-rose-200': notices.earnings?.tone==='error',
+          'border-slate-700 bg-slate-950/60 text-slate-200': notices.earnings?.tone==='info'
+        }">
+        <span>{{ notices.earnings?.text }}</span>
+        <button class="text-[10px] uppercase tracking-wide text-slate-400 hover:text-slate-200" (click)="clearNotice('earnings')">Dismiss</button>
+      </div>
+      <div *ngIf="earningsLoading" class="text-slate-400 text-sm">Loading earnings...</div>
+      <div *ngIf="!earningsLoading && earnings && earnings.entries.length === 0" class="text-slate-500 text-sm">No earnings yet.</div>
+      <div *ngIf="earnings && earnings.entries.length" class="space-y-4">
+        <div class="flex flex-wrap gap-4">
+          <div *ngFor="let total of earnings.totals | keyvalue" class="border border-slate-800 rounded-xl px-4 py-3 bg-slate-950/60 text-slate-200">
+            <div class="text-xs uppercase tracking-wide text-slate-400">{{ total.key }}</div>
+            <div class="text-xl font-semibold">{{ total.value | number:'1.2-2' }}</div>
+          </div>
+        </div>
+        <table class="w-full text-sm text-slate-300 border border-slate-800 rounded-xl overflow-hidden">
+          <thead class="bg-slate-900/70 text-xs uppercase tracking-wide text-slate-400">
+            <tr>
+              <th class="px-3 py-2 text-left">Purchase</th>
+              <th class="px-3 py-2 text-left">Role</th>
+              <th class="px-3 py-2 text-left">Amount</th>
+              <th class="px-3 py-2 text-left">Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let e of earnings.entries" class="border-t border-slate-800">
+              <td class="px-3 py-2">{{ e.purchaseId }}</td>
+              <td class="px-3 py-2 capitalize">{{ e.recipientType }}</td>
+              <td class="px-3 py-2">{{ formatCurrency(e.amount, e.currency) }}</td>
+              <td class="px-3 py-2">{{ e.createdAt | date:'medium' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
 </div>

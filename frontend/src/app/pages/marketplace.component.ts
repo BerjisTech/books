@@ -1,9 +1,12 @@
-import { Component } from '@angular/core';
+import { Component, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../api.service';
 import { PaymentPanelComponent } from '../components/payment-panel/payment-panel.component';
 import { interval, Subscription } from 'rxjs';
+import { Router } from '@angular/router';
+
+type Tone = 'info' | 'success' | 'error';
 
 @Component({
   selector: 'app-marketplace',
@@ -11,7 +14,7 @@ import { interval, Subscription } from 'rxjs';
   imports: [CommonModule, FormsModule, PaymentPanelComponent],
   templateUrl: './marketplace.component.html'
 })
-export class MarketplacePageComponent {
+export class MarketplacePageComponent implements OnDestroy {
   items: any[] = [];
   loading = false;
   q = '';
@@ -19,17 +22,51 @@ export class MarketplacePageComponent {
   paymentDetails: any = null;
   pollSub?: Subscription;
   devUserId = localStorage.getItem('devUserId') || '';
-  constructor(private api: ApiService) { this.search(); }
+  notice: { text: string; tone: Tone } | null = null;
+  constructor(private api: ApiService, private router: Router) { this.search(); }
+
+  ngOnDestroy(): void {
+    this.pollSub?.unsubscribe();
+  }
+  private setNotice(text: string, tone: Tone = 'info') {
+    this.notice = { text, tone };
+  }
+  clearNotice() {
+    this.notice = null;
+  }
+
   search() {
     this.loading = true;
+    this.clearNotice();
     this.api.getPublicBooks(this.q).subscribe({
-      next: res => { this.items = res.data || []; this.loading = false; },
-      error: () => { this.items = []; this.loading = false; }
+      next: res => {
+        const data = res.data || [];
+        this.items = data.map((b: any) => ({
+          ...b,
+          displayCover: b.coverImageUrl,
+          displayAuthor: b.authorName,
+          slugOrId: b.slug || b.id
+        }));
+        this.loading = false;
+      },
+      error: () => { this.items = []; this.loading = false; this.setNotice('We could not load the marketplace right now.', 'error'); }
     });
+  }
+  coverFor(book: any) {
+    if (book?.displayCover) return book.displayCover;
+    const fallback = this.items.length ? this.items[0].displayCover : null;
+    return fallback || 'https://www.rockingbookcovers.com/wp-content/uploads/2023/03/Dont-Go-There.jpg';
+  }
+  view(book: any) {
+    const target = book?.slugOrId || book?.id;
+    if (target) {
+      this.router.navigate(['/book', target]);
+    }
   }
   buy(b: any) {
     this.selected = b;
     this.paymentDetails = null;
+    this.setNotice('Preparing checkout…', 'info');
     this.api.createPurchase(b.id, 'ebook', 'mpesa').subscribe(res => {
       if (res.status === 402) {
         this.paymentDetails = res.body.data;
@@ -39,10 +76,11 @@ export class MarketplacePageComponent {
           this.pollSub?.unsubscribe();
           this.pollSub = interval(5000).subscribe(() => this.refreshIntent());
         }
+        this.setNotice('Payment initiated. Complete it using the instructions below.', 'info');
       } else if (res.status >= 200 && res.status < 300) {
-        alert('Purchase completed');
+        this.setNotice('Purchase completed. You can find it in your library.', 'success');
       } else {
-        alert('Failed to start purchase');
+        this.setNotice('Unable to start that purchase. Please try again.', 'error');
       }
     });
   }
@@ -58,16 +96,16 @@ export class MarketplacePageComponent {
         const purchaseId = this.paymentDetails?.purchaseId;
         if (purchaseId) {
           this.api.confirmPurchase(purchaseId).subscribe(() => {
-            alert('Payment ' + st + ' — purchase confirmed');
+            this.setNotice(`Payment ${st}. Purchase confirmed.`, st === 'succeeded' ? 'success' : 'info');
           });
         } else {
-          alert('Payment ' + st);
+          this.setNotice(`Payment ${st}.`, st === 'succeeded' ? 'success' : 'info');
         }
       }
     });
   }
   saveDevUser() {
     if (this.devUserId) localStorage.setItem('devUserId', this.devUserId); else localStorage.removeItem('devUserId');
-    alert('Saved');
+    this.setNotice('Developer user preference saved for this browser.', 'success');
   }
 }

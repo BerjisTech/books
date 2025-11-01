@@ -16,11 +16,15 @@ export class ReaderPageComponent {
   totalPages = 0;
   html: SafeHtml = '';
   error = '';
-  pages: { pageNo: number }[] = [];
+  pages: { pageNo: number; section?: string; label?: string }[] = [];
   chapters: { number: number; title: string; pageNoStart?: number }[] = [];
   navCollapsed = false;
   expanded: Record<number, boolean> = {};
   activeChapter?: number;
+  section = '';
+  label = '';
+  audioUrl = '';
+  videoUrl = '';
 
   constructor(private route: ActivatedRoute, private router: Router, private api: ApiService, private san: DomSanitizer) {
     this.route.paramMap.subscribe(params => {
@@ -46,6 +50,10 @@ export class ReaderPageComponent {
         const d = res?.data || {};
         this.totalPages = d.totalPages || 0;
         this.html = this.san.bypassSecurityTrustHtml(d.html || '<p>No content</p>');
+        this.section = d.section || '';
+        this.label = d.label || '';
+        this.audioUrl = d.audioUrl || '';
+        this.videoUrl = d.videoUrl || '';
         this.updateActiveChapter();
       },
       error: err => {
@@ -58,17 +66,17 @@ export class ReaderPageComponent {
 
   goPrev() { if (this.pageNo > 1) this.router.navigate(['/book', this.bookId, 'page', this.pageNo - 1]); }
   goNext() { if (!this.totalPages || this.pageNo < this.totalPages) this.router.navigate(['/book', this.bookId, 'page', this.pageNo + 1]); }
-  go(n: number | {pageNo: number}) {
+  go(n: number | { pageNo: number }) {
     const p = typeof n === 'number' ? n : n.pageNo;
     this.router.navigate(['/book', this.bookId, 'page', p]);
   }
-  btnClass(p: {pageNo: number}) { return this.pageNo === p.pageNo ? 'bg-blue-600 text-white' : 'bg-slate-800 hover:bg-slate-700'; }
+  btnClass(p: { pageNo: number }) { return this.pageNo === p.pageNo ? 'bg-blue-600 text-white' : 'bg-slate-800 hover:bg-slate-700'; }
 
   toggleNav() { this.navCollapsed = !this.navCollapsed; }
   toggleChapter(num: number) { this.expanded[num] = !this.expanded[num]; }
   pagesForChapter(num: number) {
     const ch = this.chapters.find(c => c.number === num);
-    if (!ch || !ch.pageNoStart) return [] as {pageNo:number}[];
+    if (!ch || !ch.pageNoStart) return [] as { pageNo: number }[];
     const idx = this.chapters.findIndex(c => c.number === num);
     const next = idx >= 0 && idx + 1 < this.chapters.length ? this.chapters[idx + 1] : undefined;
     const end = next?.pageNoStart ? (next.pageNoStart - 1) : (this.totalPages || Number.MAX_SAFE_INTEGER);

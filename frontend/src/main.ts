@@ -19,6 +19,9 @@ import { OrdersPageComponent } from './app/pages/orders.component';
 import { DashboardPageComponent } from './app/pages/dashboard.component';
 import { ReaderPageComponent } from './app/pages/reader.component';
 import { BookComponent } from './app/components/book/book.component';
+import { AuthorsPageComponent } from './app/pages/authors.component';
+import { AuthorEnrollmentComponent } from './app/pages/author-enrollment.component';
+import { PublisherEnrollmentComponent } from './app/pages/publisher-enrollment.component';
 
 const routes: Routes = [
   { path: '', component: HomePageComponent },
@@ -28,6 +31,9 @@ const routes: Routes = [
   { path: 'orders', component: OrdersPageComponent },
   { path: 'book/:id', component: BookComponent },
   { path: 'book/:id/page/:n', component: ReaderPageComponent },
+  { path: 'authors', component: AuthorsPageComponent },
+  { path: 'enroll/author', component: AuthorEnrollmentComponent },
+  { path: 'enroll/publisher', component: PublisherEnrollmentComponent },
   { path: 'dashboard', component: DashboardPageComponent },
   { path: '**', redirectTo: '' }
 ];

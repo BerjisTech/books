@@ -19,6 +19,10 @@ export class AppComponent implements OnInit {
   authed = false;
   accountUrl = 'http://berjis.tech/account';
   userName: string | null = null;
+  devNotice: { text: string; tone: 'info' | 'success' | 'error' } | null = null;
+  collectionOpen = false;
+  marketplaceOpen = false;
+  communityOpen = false;
   constructor(private auth: AuthService) {}
   ngOnInit(): void {
     const w: any = (typeof window !== 'undefined') ? (window as any) : {};
@@ -31,18 +35,25 @@ export class AppComponent implements OnInit {
     this.auth.user().subscribe(u => this.userName = u?.name || null);
     this.auth.check();
   }
+  toggleCollection() { this.collectionOpen = !this.collectionOpen; }
+  toggleMarketplace() { this.marketplaceOpen = !this.marketplaceOpen; }
+  toggleCommunity() { this.communityOpen = !this.communityOpen; }
+  private setDevNotice(text: string, tone: 'info' | 'success' | 'error' = 'info') {
+    this.devNotice = { text, tone };
+    setTimeout(() => { this.devNotice = null; }, 5000);
+  }
   saveBooksBase() {
     const w: any = (typeof window !== 'undefined') ? (window as any) : {};
     if (this.newBooksBase && this.newBooksBase.trim().length > 0) {
       w.__BOOKS_API__ = this.newBooksBase.trim();
       try { localStorage.setItem('booksApiBase', w.__BOOKS_API__); } catch {}
       this.booksBase = w.__BOOKS_API__;
-      alert('Books API base set to: ' + this.booksBase);
+      this.setDevNotice('Books API base updated.', 'success');
     } else {
       delete w.__BOOKS_API__;
       try { localStorage.removeItem('booksApiBase'); } catch {}
       this.booksBase = 'http://localhost:8088';
-      alert('Books API base cleared; using default ' + this.booksBase);
+      this.setDevNotice('Books API base cleared; using default.', 'info');
     }
   }
 }

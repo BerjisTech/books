@@ -1,48 +1,40 @@
-<div class="flex gap-3">
-    <div class="w-1/2 h-[300px]"></div>
-    <div class="w-1/2 flex flex-col gap-4">
-        <span class="text-7xl font-thin">{{ book?.title }}</span>
-        <span class="text-2xl font-thin">{{ book?.author_name }}</span>
-        <span>{{ book?.short_description }}</span>
+<div class="space-y-8" *ngIf="book; else loadingState">
+  <div class="grid lg:grid-cols-2 gap-8">
+    <div class="relative rounded-3xl overflow-hidden shadow-2xl border border-slate-800 bg-slate-900/80">
+      <img [src]="book.cover" alt="Cover art" class="w-full h-[420px] object-cover">
+      <div class="absolute top-4 left-4 bg-slate-950/80 px-4 py-2 rounded-full text-xs uppercase tracking-wide text-slate-200">
+        {{ book.slag }}
+      </div>
+      <div class="absolute bottom-4 right-4 text-sm text-slate-200 px-3 py-1 rounded-full bg-slate-950/70">
+        {{ book.price ? (book.price | number:'1.2-2') + ' ' + (book.priceCurrency || 'USD') : 'Free' }}
+      </div>
     </div>
+    <div class="flex flex-col gap-4 text-slate-200">
+      <div>
+        <h1 class="text-5xl font-light">{{ book.title }}</h1>
+        <div class="text-lg text-slate-400 mt-2">{{ book.author_name }}</div>
+      </div>
+      <p class="text-slate-300 leading-relaxed">{{ book.short_description || book.description }}</p>
+      <div class="text-sm text-slate-400">
+        <div><strong>Language:</strong> {{ book.language || 'Not specified' }}</div>
+        <div *ngIf="book.paperback"><strong>Print:</strong> {{ book.paperback }}</div>
+      </div>
+      <div class="flex items-center gap-3">
+        <a [routerLink]="['/book', book.slag || book.title]" class="px-5 py-2 rounded-full bg-slate-100 text-slate-900 hover:bg-white flex items-center gap-2">
+          Start Reading <span class="material-symbols-outlined text-base">arrow_outward</span>
+        </a>
+        <a routerLink="/marketplace" class="text-sm text-slate-400 hover:underline">Back to marketplace</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="border border-slate-800 bg-slate-900/60 rounded-3xl p-6 text-slate-200 space-y-4">
+    <h2 class="text-2xl font-semibold">About this Book</h2>
+    <p class="text-slate-300 leading-relaxed">{{ book.long_description || 'No extended description yet.' }}</p>
+  </div>
 </div>
-<div class="flex gap-3 bg-slate-50 p-10">
-    <div class="w-1/2 flex flex-col gap-4">
-        <div class="relative h-[200px]">
-            <div class="absolute bottom-0 bg-cover bg-no-repeat bg-center right-[30%] w-[350px] h-[500px] table"
-                [style.backgroundImage]="'url(' + book?.cover + ')'"></div>
-        </div>
-        <span class="text-3xl font-thin">Description</span>
-        <span class="font-thin">{{ book?.long_description }}</span>
-        <div class="flex items-start justify-start gap-2">
-            <img src="{{ book?.author_avatar }}" class="w-[50px] h-[50px] rounded-full" />
-            <div class="flex flex-col gap-2">
-                <span class="text-2xl font-thin">{{ book?.author_name }}</span>
-                <span class="font-thin">{{ book?.author_short_bio }}</span>
-            </div>
-        </div>
-    </div>
-    <div class="w-1/2 flex flex-col items-center content-center justify-center gap-8">
-        <div class="w-4/5 flex items-center content-center justify-center">
-            <a routerLink="/book/{{ book?.slag }}/page/cover"
-                class="flex items-center content-center justify-center bg-slate-950 text-white px-5 py-2 rounded-3xl"
-                role="button">
-                Start Reading <span class="material-symbols-outlined">arrow_outward</span>
-            </a>
-            <span class="flex-grow"></span>
-            <!-- Bookmark, share, download icons -->
-            <span class="material-symbols-outlined" role="button">bookmark</span>
-            <span class="material-symbols-outlined" role="button">share</span>
-            <span class="material-symbols-outlined" role="button">download</span>
-        </div>
-        <hr />
-        <div class="w-2/4 flex flex-col gap-5">
-            <span class="text-2xl">Editors</span>
-            <span>{{ book?.editors }}</span>
-            <span class="text-2xl">Language</span>
-            <span>{{ book?.language }}</span>
-            <span class="text-2xl">Paperback</span>
-            <span>{{ book?.paperback }}</span>
-        </div>
-    </div>
-</div>
+
+<ng-template #loadingState>
+  <div *ngIf="loading" class="text-center py-12 text-slate-400">Loading book details...</div>
+  <div *ngIf="!loading && error" class="text-center py-12 text-rose-300">{{ error }}</div>
+</ng-template>

@@ -25,19 +25,26 @@
       </ul>
       <div class="font-semibold mb-1">All Pages</div>
       <div class="flex flex-wrap gap-2 text-sm">
-        <button *ngFor="let p of pages" (click)="go(p)" [class]="btnClass(p)" class="px-2 py-1 rounded border">
+        <button *ngFor="let p of pages" (click)="go(p)" [class]="btnClass(p)" class="px-2 py-1 rounded border" [title]="p.label || ('Section: ' + (p.section || 'content'))">
           {{ p.pageNo }}
         </button>
       </div>
     </ng-container>
   </aside>
   <section class="col-span-12 md:col-span-9">
-    <div class="mb-2">
-      <button (click)="goPrev()" [disabled]="pageNo<=1" class="px-2 py-1 border rounded disabled:opacity-50">Prev</button>
-      <span class="mx-2">Page {{ pageNo }} of {{ totalPages || '?' }}</span>
-      <button (click)="goNext()" [disabled]="totalPages>0 && pageNo>=totalPages" class="px-2 py-1 border rounded disabled:opacity-50">Next</button>
+    <div class="mb-4 flex flex-wrap items-center justify-between gap-3 text-sm text-slate-300">
+      <div class="flex items-center gap-2">
+        <button (click)="goPrev()" [disabled]="pageNo<=1" class="px-2 py-1 border rounded disabled:opacity-50">Prev</button>
+        <span class="mx-2">Page {{ pageNo }} of {{ totalPages || '?' }}</span>
+        <button (click)="goNext()" [disabled]="totalPages>0 && pageNo>=totalPages" class="px-2 py-1 border rounded disabled:opacity-50">Next</button>
+      </div>
+      <div class="flex flex-wrap gap-3 items-center" *ngIf="section || label || audioUrl || videoUrl">
+        <span *ngIf="section" class="uppercase tracking-wide text-xs text-slate-400">{{ section }}</span>
+        <span *ngIf="label" class="px-2 py-1 bg-slate-800 rounded-full text-xs">{{ label }}</span>
+        <a *ngIf="audioUrl" [href]="audioUrl" target="_blank" class="text-xs text-emerald-300 underline">Audio companion</a>
+        <a *ngIf="videoUrl" [href]="videoUrl" target="_blank" class="text-xs text-amber-300 underline">Video companion</a>
+      </div>
     </div>
     <div [innerHTML]="html" class="min-h-[60vh] p-4 border rounded bg-slate-900"></div>
   </section>
 </div>
-

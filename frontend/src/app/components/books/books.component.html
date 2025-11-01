@@ -1,3 +1,16 @@
-<app-books-list pageTitle="Book Recomendation" [books]="dummyBooks(4)"></app-books-list>
-<app-books-list pageTitle="Popular Books" [books]="dummyBooks(8)"></app-books-list>
-<app-books-list pageTitle="New Books" [books]="dummyBooks(6)"></app-books-list>
+<div class="px-4 pb-[50px]">
+  <div class="flex items-center content-center justify-between gap-3 my-3">
+    <div>
+      <div class="text-2xl">Featured Books</div>
+      <div class="text-sm opacity-70">Hand-picked for your taste</div>
+    </div>
+    <span class="bg-slate-50 rounded-md text-lg px-3 py-1" role="button" (click)="load()">Refresh</span>
+  </div>
+  <div *ngIf="loading" class="py-8 text-center text-slate-300">Loading curated shelf...</div>
+  <ng-container *ngIf="!loading && books.length">
+    <app-books-list [books]="books" pageTitle="Trending Now"></app-books-list>
+  </ng-container>
+  <div *ngIf="!loading && !books.length" class="py-12 text-center text-slate-400">
+    No books yet. Check back soon!
+  </div>
+</div>

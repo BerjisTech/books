@@ -1,26 +1,82 @@
-<h2>Marketplace</h2>
-<div style="margin:8px 0">
-  <input [(ngModel)]="q" placeholder="Search books" />
-  <button (click)="search()">Search</button>
-  </div>
-<div style="margin:8px 0; font-size:12px; opacity:.8">
-  Dev user ID: <input [(ngModel)]="devUserId" placeholder="dev user id" style="width:360px" />
-  <button (click)="saveDevUser()">Save</button>
-</div>
-<div *ngIf="loading">Loading…</div>
-<div *ngIf="!loading && items.length === 0">No books found.</div>
-<ul>
-  <li *ngFor="let b of items" style="margin:8px 0">
-    <strong>{{ b.title }}</strong>
-    <span *ngIf="b.subtitle"> - {{ b.subtitle }}</span>
-    <div style="opacity:.7">{{ b.description }}</div>
-    <div *ngIf="b.priceAmount">Price: {{ b.priceAmount }} {{ b.priceCurrency }}</div>
+<div class="px-8 py-6 space-y-6">
+  <div class="flex flex-wrap items-end justify-between gap-4">
     <div>
-      <button (click)="buy(b)">Buy (M-Pesa)</button>
+      <h2 class="text-4xl font-light">Berjis Marketplace</h2>
+      <p class="text-slate-400 max-w-2xl">
+        Discover polished releases from the Berjis ecosystem. Browse, preview, and collect titles from authors and publishers working with us.
+      </p>
     </div>
-    <div *ngIf="selected && selected.id === b.id && paymentDetails" style="margin-top:10px;">
-      <app-payment-panel [details]="paymentDetails"></app-payment-panel>
+    <div class="text-xs text-slate-500 bg-slate-900/50 border border-slate-800 rounded-lg px-3 py-2 flex items-center gap-2">
+      <span>Dev user override</span>
+      <input class="bg-transparent border border-slate-700 rounded px-2 py-1 text-slate-200 w-48" [(ngModel)]="devUserId" placeholder="dev user id">
+      <button class="bg-slate-700 hover:bg-slate-600 text-white rounded px-3 py-1" (click)="saveDevUser()">Save</button>
     </div>
-  </li>
-</ul>
+  </div>
 
+  <div class="flex flex-wrap gap-3 items-center">
+    <input
+      class="flex-1 min-w-[200px] bg-slate-900 border border-slate-800 rounded-full px-4 py-2 text-slate-100"
+      [(ngModel)]="q"
+      placeholder="Search by title, author, or description" />
+    <button class="px-5 py-2 rounded-full bg-slate-100 text-slate-900 hover:bg-white" (click)="search()">Search</button>
+    <button class="px-5 py-2 rounded-full border border-slate-600 text-slate-300 hover:border-slate-400" (click)="search()">Reset</button>
+  </div>
+
+  <div *ngIf="notice" class="rounded-2xl border px-4 py-3 flex items-center justify-between text-sm"
+    [ngClass]="{
+      'border-emerald-500/40 bg-emerald-500/5 text-emerald-200': notice?.tone==='success',
+      'border-rose-500/40 bg-rose-500/5 text-rose-200': notice?.tone==='error',
+      'border-slate-700 bg-slate-900/60 text-slate-200': notice?.tone==='info'
+    }">
+    <span>{{ notice?.text }}</span>
+    <button class="text-xs uppercase tracking-wide text-slate-400 hover:text-slate-200" (click)="clearNotice()">Dismiss</button>
+  </div>
+
+  <div *ngIf="loading" class="text-center py-12 text-slate-400">
+    Curating the shelves for you...
+  </div>
+
+  <div *ngIf="!loading && !items.length" class="text-center py-12 text-slate-500">
+    No books match your filters yet. Try another search or check back soon.
+  </div>
+
+  <div *ngIf="!loading && items.length" class="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+    <div *ngFor="let b of items" class="bg-slate-900/70 border border-slate-800 rounded-3xl overflow-hidden flex flex-col shadow-[0_30px_60px_-40px_rgba(8,20,40,0.6)]">
+      <div class="relative">
+        <img [src]="coverFor(b)" alt="Book cover" class="w-full h-64 object-cover">
+        <div class="absolute bottom-3 left-3 bg-slate-950/80 text-xs uppercase tracking-wide px-3 py-1 rounded-full">
+          {{ b.status | titlecase }}
+        </div>
+      </div>
+      <div class="p-6 flex-1 flex flex-col gap-3">
+        <div>
+          <h3 class="text-2xl font-semibold text-white leading-tight">{{ b.title }}</h3>
+          <div class="text-sm text-slate-400 mt-1">
+            {{ b.displayAuthor || 'Independent author' }}
+            <span *ngIf="b.publisherName"> • {{ b.publisherName }}</span>
+          </div>
+        </div>
+        <p class="text-sm text-slate-300 line-clamp-3">{{ b.description || 'No description provided yet.' }}</p>
+        <div class="text-lg font-semibold text-slate-100 mt-auto">
+          <ng-container *ngIf="b.priceAmount; else freeTag">
+            {{ b.priceAmount | number:'1.2-2' }} <span class="text-slate-400 text-sm">{{ b.priceCurrency || 'USD' }}</span>
+          </ng-container>
+          <ng-template #freeTag>
+            <span class="text-emerald-300">Free to add</span>
+          </ng-template>
+        </div>
+        <div class="flex items-center gap-3 pt-2">
+          <button class="flex-1 px-4 py-2 rounded-full border border-slate-700 text-slate-200 hover:border-slate-500" (click)="view(b)">
+            Preview
+          </button>
+          <button class="flex-1 px-4 py-2 rounded-full bg-slate-100 text-slate-900 hover:bg-white" (click)="buy(b)">
+            Buy Now
+          </button>
+        </div>
+        <div *ngIf="selected && selected.id === b.id && paymentDetails" class="mt-4">
+          <app-payment-panel [details]="paymentDetails"></app-payment-panel>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

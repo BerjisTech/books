@@ -1,3 +1,151 @@
-<h2>Book Clubs</h2>
-<p>Create or join clubs. Rooms and chat will be available for discussions.</p>
+<div class="grid lg:grid-cols-4 gap-6 px-8 py-6 text-slate-200">
+  <aside class="lg:col-span-1 space-y-4">
+    <div class="border border-slate-800 rounded-2xl bg-slate-900/60 p-4 space-y-3">
+      <h2 class="text-xl font-semibold">My Clubs</h2>
+      <div *ngIf="clubLoading" class="text-sm text-slate-400">Loading clubs...</div>
+      <div class="flex flex-col gap-2 max-h-[280px] overflow-auto">
+        <button
+          *ngFor="let club of clubs"
+          (click)="selectClub(club.id)"
+          [class]="selectedClubId === club.id ? 'bg-slate-800 text-slate-100 rounded-xl px-3 py-2 text-left' : 'rounded-xl px-3 py-2 text-left text-slate-300 border border-transparent hover:border-slate-700'">
+          <div class="font-semibold">{{ club.name }}</div>
+          <div class="text-xs text-slate-400">{{ club.visibility | titlecase }}</div>
+        </button>
+      </div>
+      <div class="space-y-2 text-sm">
+        <input class="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-slate-100" [(ngModel)]="newClubName" placeholder="New club name">
+        <textarea class="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-slate-100" [(ngModel)]="newClubDescription" rows="2" placeholder="Description"></textarea>
+        <button class="w-full px-3 py-2 rounded-full bg-slate-100 text-slate-900 hover:bg-white" (click)="createClub()">Create club</button>
+      </div>
+      <button *ngIf="selectedClubId" class="w-full text-sm text-slate-300 border border-slate-700 rounded-full px-3 py-1 hover:border-slate-500" (click)="joinSelectedClub()">Join selected</button>
+    </div>
+  </aside>
 
+  <section class="lg:col-span-3 space-y-6">
+    <div *ngIf="notice" class="rounded-2xl border px-4 py-3 flex items-center justify-between text-sm"
+      [ngClass]="{
+        'border-emerald-500/40 bg-emerald-500/5 text-emerald-200': notice?.tone==='success',
+        'border-rose-500/40 bg-rose-500/5 text-rose-200': notice?.tone==='error',
+        'border-slate-700 bg-slate-900/60 text-slate-200': notice?.tone==='info'
+      }">
+      <span>{{ notice?.text }}</span>
+      <button class="text-xs uppercase tracking-wide" (click)="clearNotice()">Dismiss</button>
+    </div>
+    <div class="grid md:grid-cols-2 gap-6">
+      <div class="border border-slate-800 rounded-3xl bg-slate-900/70 p-5 space-y-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-xl font-semibold">Rooms</h3>
+            <p class="text-xs text-slate-400" *ngIf="selectedClubId && activeClubName">Club {{ activeClubName }}</p>
+          </div>
+          <button *ngIf="selectedClubId" class="text-xs text-slate-300 border border-slate-700 rounded-full px-3 py-1 hover:border-slate-500" (click)="refreshRooms()">Refresh</button>
+        </div>
+        <div *ngIf="roomLoading" class="text-xs text-slate-500">Loading rooms…</div>
+        <div class="flex flex-col gap-2 max-h-48 overflow-auto text-sm">
+          <button
+            *ngFor="let room of rooms"
+            (click)="selectRoom(room.id)"
+            [class]="selectedRoomId === room.id ? 'bg-slate-800 rounded-xl px-3 py-2 text-left' : 'rounded-xl px-3 py-2 text-left text-slate-300 border border-transparent hover:border-slate-700'">
+            {{ room.name }}
+          </button>
+          <div *ngIf="!rooms.length && !roomLoading" class="text-xs text-slate-500">No rooms yet.</div>
+        </div>
+        <div class="flex gap-2 text-sm" *ngIf="selectedClubId">
+          <input class="flex-1 bg-slate-950 border border-slate-800 rounded px-3 py-2 text-slate-100" [(ngModel)]="newRoomName" placeholder="New room name">
+          <button class="px-3 py-2 rounded-full bg-slate-100 text-slate-900 hover:bg-white" (click)="createRoom()">Create</button>
+        </div>
+      </div>
+
+      <div class="border border-slate-800 rounded-3xl bg-slate-900/70 p-5 space-y-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-xl font-semibold">Sessions</h3>
+            <p class="text-xs text-slate-400">Group reads & watch parties</p>
+          </div>
+          <button *ngIf="selectedClubId" class="text-xs text-slate-300 border border-slate-700 rounded-full px-3 py-1 hover:border-slate-500" (click)="refreshSessions()">Refresh</button>
+        </div>
+        <div *ngIf="sessionLoading" class="text-xs text-slate-500">Loading sessions…</div>
+        <div class="space-y-2 text-sm max-h-52 overflow-auto">
+          <div *ngFor="let s of sessions" class="border border-slate-800 rounded-xl px-3 py-2 bg-slate-950/60 flex items-center justify-between gap-3">
+            <div>
+              <div class="font-semibold">{{ s.sessionType | titlecase }} session</div>
+              <div class="text-slate-400 text-xs">{{ s.scheduledAt | date:'medium' }} • {{ s.status }}</div>
+            </div>
+            <div class="flex items-center gap-2">
+              <a *ngIf="s.meetingUrl" [href]="s.meetingUrl" target="_blank" class="text-xs text-slate-200 underline">Join</a>
+              <button class="text-xs text-slate-300 border border-slate-700 rounded-full px-2 py-1 hover:border-slate-500" (click)="joinSession(s.id)">Attend</button>
+            </div>
+          </div>
+          <div *ngIf="!sessions.length && !sessionLoading" class="text-xs text-slate-500">No sessions scheduled.</div>
+        </div>
+        <div *ngIf="selectedClubId" class="grid md:grid-cols-2 gap-2 text-xs text-slate-300">
+          <label class="flex flex-col gap-1">
+            <span>Type</span>
+            <select class="bg-slate-950 border border-slate-800 rounded px-2 py-1 text-slate-100" [(ngModel)]="newSessionType">
+              <option value="audio">Audio</option>
+              <option value="video">Video</option>
+            </select>
+          </label>
+          <label class="flex flex-col gap-1">
+            <span>Date</span>
+            <input type="date" class="bg-slate-950 border border-slate-800 rounded px-2 py-1 text-slate-100" [(ngModel)]="newSessionDate">
+          </label>
+          <label class="flex flex-col gap-1">
+            <span>Time</span>
+            <input type="time" class="bg-slate-950 border border-slate-800 rounded px-2 py-1 text-slate-100" [(ngModel)]="newSessionTime">
+          </label>
+          <label class="flex flex-col gap-1">
+            <span>Duration (min)</span>
+            <input type="number" min="15" class="bg-slate-950 border border-slate-800 rounded px-2 py-1 text-slate-100" [(ngModel)]="newSessionDuration">
+          </label>
+          <label class="md:col-span-2 flex flex-col gap-1">
+            <span>Meeting link (optional)</span>
+            <input class="bg-slate-950 border border-slate-800 rounded px-2 py-1 text-slate-100" [(ngModel)]="newSessionMeetingUrl" placeholder="https://...">
+          </label>
+          <button class="md:col-span-2 px-3 py-2 rounded-full bg-slate-100 text-slate-900 hover:bg-white" (click)="createSession()">Schedule session</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="border border-slate-800 rounded-3xl bg-slate-900/70 p-5 space-y-4" *ngIf="selectedRoomId">
+      <div class="flex items-center justify-between">
+        <h3 class="text-xl font-semibold">Discussion</h3>
+        <button class="text-xs text-slate-300 border border-slate-700 rounded-full px-3 py-1 hover:border-slate-500" (click)="refreshMessages()">Refresh</button>
+      </div>
+      <div *ngIf="messageLoading" class="text-xs text-slate-500">Loading conversation…</div>
+      <div class="max-h-[360px] overflow-auto space-y-3">
+        <div *ngFor="let m of messages" class="border border-slate-800 rounded-xl px-3 py-2 bg-slate-950/60 text-sm text-slate-200">
+          <div class="flex items-center justify-between">
+            <span class="text-xs text-slate-400">{{ m.userId }}</span>
+            <span class="text-xs text-slate-500">{{ m.createdAt | date:'short' }}</span>
+          </div>
+          <div class="mt-1">{{ m.content }}</div>
+          <div class="flex items-center gap-2 text-xs text-slate-400 mt-2">
+            <button class="px-2 py-1 border border-slate-700 rounded-full hover:border-slate-500" (click)="react(m.id, 'like')">👍 {{ m.reactions?.like || 0 }}</button>
+            <button class="px-2 py-1 border border-slate-700 rounded-full hover:border-slate-500" (click)="react(m.id, 'upvote')">⬆ {{ m.reactions?.upvote || 0 }}</button>
+            <button class="px-2 py-1 border border-slate-700 rounded-full hover:border-slate-500" (click)="react(m.id, 'downvote')">⬇ {{ m.reactions?.downvote || 0 }}</button>
+            <button
+              class="px-2 py-1 border border-rose-700 text-rose-300 rounded-full hover:border-rose-500"
+              (click)="beginReport(m.id)">Report</button>
+          </div>
+          <div *ngIf="reportingMessageId === m.id" class="mt-3 border border-rose-500/40 bg-rose-500/5 rounded-xl p-3 text-xs text-rose-100 space-y-2">
+            <div class="font-semibold">Report message</div>
+            <textarea class="w-full bg-slate-950 border border-rose-500/40 rounded px-3 py-2 text-slate-100" rows="3"
+              [(ngModel)]="reportReason" placeholder="Share what is going on"></textarea>
+            <div class="flex gap-2 justify-end">
+              <button class="px-3 py-1 rounded-full border border-slate-700 text-slate-300 hover:border-slate-500" type="button" (click)="cancelReport()">Cancel</button>
+              <button class="px-3 py-1 rounded-full bg-rose-200 text-rose-900 hover:bg-rose-100 disabled:opacity-60"
+                type="button" [disabled]="reportSubmitting" (click)="submitReport()">
+                {{ reportSubmitting ? 'Submitting…' : 'Submit report' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="flex gap-2">
+        <input class="flex-1 bg-slate-950 border border-slate-800 rounded px-3 py-2 text-slate-100" [(ngModel)]="newMessage" placeholder="Share something with the club">
+        <button class="px-4 py-2 rounded-full bg-slate-100 text-slate-900 hover:bg-white" (click)="sendMessage()">Send</button>
+      </div>
+    </div>
+  </section>
+</div>

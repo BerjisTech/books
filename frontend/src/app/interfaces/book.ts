@@ -9,6 +9,7 @@ export interface Book {
     cover: string;
     description?: string;
     price?: number;
+    priceCurrency?: string;
     discount?: number;
     discountPrice?: number;
     rating?: number;
