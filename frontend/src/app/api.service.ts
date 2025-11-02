@@ -15,7 +15,7 @@ export class ApiService {
     }
     const devUser = localStorage.getItem('devUserId');
     if (devUser) {
-      h = h.set('X-User-ID', devUser);
+      h = h.set('X-User-UUID', devUser);
     }
     return h;
   }

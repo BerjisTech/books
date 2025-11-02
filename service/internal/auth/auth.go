@@ -4,7 +4,6 @@ import (
     "encoding/json"
     "errors"
     "net/http"
-    "strconv"
     "strings"
     "time"
 
@@ -42,7 +41,7 @@ func Middleware(opts Options) fiber.Handler {
             if sub, ok := claims["sub"].(string); ok && sub != "" { uid = sub }
         }
         if uid == "" && strings.ToLower(opts.Env) == "development" {
-            uid = c.Get("X-User-ID")
+            uid = c.Get("X-User-UUID")
         }
         // If still empty, verify via Core API using cookies/headers
         if uid == "" && strings.TrimSpace(opts.CoreAPIBase) != "" {
@@ -56,12 +55,12 @@ func Middleware(opts Options) fiber.Handler {
                 if err := json.NewDecoder(resp.Body).Decode(&raw); err == nil {
                     if data, _ := raw["data"].(map[string]any); data != nil {
                         if valid, ok := data["valid"].(bool); ok && valid {
-                            if u, ok := data["uid"].(float64); ok { uid = strconv.FormatInt(int64(u), 10) }
+                            if us, ok := data["uid"].(string); ok && us != "" { uid = us }
                             if uid == "" {
-                                if us, ok := data["uid"].(string); ok { uid = us }
-                                if uid == "" {
-                                    if us2, ok := data["userId"].(string); ok { uid = us2 }
-                                }
+                                if us, ok := data["uuid"].(string); ok && us != "" { uid = us }
+                            }
+                            if uid == "" {
+                                if us2, ok := data["userId"].(string); ok && us2 != "" { uid = us2 }
                             }
                         }
                     }
