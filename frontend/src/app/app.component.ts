@@ -12,6 +12,7 @@ import { AuthService } from './auth.service';
   templateUrl: './app.component.html'
 })
 export class AppComponent implements OnInit {
+  isDark = false;
   isDev = !environment.production;
   coreBase = environment.apiBase;
   booksBase = '';
@@ -25,6 +26,9 @@ export class AppComponent implements OnInit {
   communityOpen = false;
   constructor(private auth: AuthService) {}
   ngOnInit(): void {
+    const persisted = (localStorage.getItem('theme') || '').toLowerCase();
+    const preferDark = persisted === 'dark';
+    this.setTheme(preferDark ? 'dark' : 'light');
     const w: any = (typeof window !== 'undefined') ? (window as any) : {};
     const stored = typeof localStorage !== 'undefined' ? localStorage.getItem('booksApiBase') : '';
     if (stored && !w.__BOOKS_API__) { w.__BOOKS_API__ = stored; }
@@ -34,6 +38,12 @@ export class AppComponent implements OnInit {
     this.auth.isAuthed().subscribe(v => this.authed = !!v);
     this.auth.user().subscribe(u => this.userName = u?.name || null);
     this.auth.check();
+  }
+  toggleTheme() { this.setTheme(this.isDark ? 'light' : 'dark'); }
+  private setTheme(mode: 'light' | 'dark') {
+    this.isDark = mode === 'dark';
+    document.documentElement.classList.toggle('dark', mode === 'dark');
+    try { localStorage.setItem('theme', mode); } catch {}
   }
   toggleCollection() { this.collectionOpen = !this.collectionOpen; }
   toggleMarketplace() { this.marketplaceOpen = !this.marketplaceOpen; }

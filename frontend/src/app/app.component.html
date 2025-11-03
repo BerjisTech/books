@@ -1,8 +1,14 @@
-<div class="fixed grid grid-cols-5 w-full h-full overflow-hidden">
+<div class="min-h-screen flex flex-col bg-app-gradient bg-app-gradient-animated text-[color:var(--color-text-primary)] dark:text-[color:var(--color-text-dark)]">
+  <button type="button" (click)="toggleTheme()"
+          class="fixed top-4 right-4 z-50 rounded-full p-3 backdrop-blur shadow-brand bg-white/80 text-blue-900 hover:bg-white dark:bg-slate-800/80 dark:text-[color:var(--color-gold)]"
+          aria-label="Toggle theme">
+    <span class="material-symbols-outlined align-middle">{{ isDark ? 'light_mode' : 'dark_mode' }}</span>
+  </button>
+  <div class="fixed grid grid-cols-5 w-full h-full overflow-hidden">
   <div class="h-screen overflow-x-hidden overflow-y-hidden">
     <div class="px-4 overflow-y-auto flex flex-col gap-6 custom-height pt-4"
       style="--custom-vh: 100vh; --custom-px: 150px;">
-      <a routerLink="/" class="flex items-center gap-2 hover:bg-slate-100 p-2 text-lg rounded-md">
+      <a routerLink="/" class="flex items-center gap-2 hover:bg-slate-100 dark:hover:bg-slate-800 p-2 text-lg rounded-md">
         <span class="material-symbols-outlined bg-slate-100 rounded-full p-2">home</span>
         <span>Berjis Books</span>
       </a>
@@ -15,20 +21,20 @@
             <span class="material-symbols-outlined text-base">{{ marketplaceOpen ? 'expand_less' : 'expand_more' }}</span>
           </button>
           <div *ngIf="marketplaceOpen" class="mt-1 flex flex-col">
-            <a routerLink="/" class="flex items-center gap-2 hover:bg-slate-100 p-2 text-sm rounded-md">
+            <a routerLink="/" class="flex items-center gap-2 hover:bg-slate-100 dark:hover:bg-slate-800 p-2 text-sm rounded-md">
               <span class="material-symbols-outlined bg-slate-100 rounded-full p-2">newsstand</span>
               <span>Discover</span>
             </a>
             <ng-container *ngIf="authed">
-              <a routerLink="/marketplace" class="flex items-center gap-2 hover:bg-slate-100 p-2 text-sm rounded-md">
+              <a routerLink="/marketplace" class="flex items-center gap-2 hover:bg-slate-100 dark:hover:bg-slate-800 p-2 text-sm rounded-md">
                 <span class="material-symbols-outlined bg-slate-100 rounded-full p-2">storefront</span>
                 <span>Buy | Rent Books</span>
               </a>
-              <a routerLink="/authors" class="flex items-center gap-2 hover:bg-slate-100 p-2 text-sm rounded-md">
+              <a routerLink="/authors" class="flex items-center gap-2 hover:bg-slate-100 dark:hover:bg-slate-800 p-2 text-sm rounded-md">
                 <span class="material-symbols-outlined bg-slate-100 rounded-full p-2">psychology</span>
                 <span>Find Authors</span>
               </a>
-              <a routerLink="/orders" class="flex items-center gap-2 hover:bg-slate-100 p-2 text-sm rounded-md">
+              <a routerLink="/orders" class="flex items-center gap-2 hover:bg-slate-100 dark:hover:bg-slate-800 p-2 text-sm rounded-md">
                 <span class="material-symbols-outlined bg-slate-100 rounded-full p-2">shopping_basket</span>
                 <span>Orders</span>
               </a>
@@ -43,15 +49,15 @@
             <span class="material-symbols-outlined text-base">{{ collectionOpen ? 'expand_less' : 'expand_more' }}</span>
           </button>
           <div *ngIf="collectionOpen" class="mt-1 flex flex-col">
-            <a routerLink="/library" class="flex items-center gap-2 hover:bg-slate-100 p-2 text-sm rounded-md">
+            <a routerLink="/library" class="flex items-center gap-2 hover:bg-slate-100 dark:hover:bg-slate-800 p-2 text-sm rounded-md">
               <span class="material-symbols-outlined bg-slate-100 rounded-full p-2">book_ribbon</span>
               <span>My Library</span>
             </a>
-            <a routerLink="/favorite" class="flex items-center gap-2 hover:bg-slate-100 p-2 text-sm rounded-md">
+            <a routerLink="/favorite" class="flex items-center gap-2 hover:bg-slate-100 dark:hover:bg-slate-800 p-2 text-sm rounded-md">
               <span class="material-symbols-outlined bg-slate-100 rounded-full p-2">favorite</span>
               <span>Favorites</span>
             </a>
-            <a routerLink="/wishlist" class="flex items-center gap-2 hover:bg-slate-100 p-2 text-sm rounded-md">
+            <a routerLink="/wishlist" class="flex items-center gap-2 hover:bg-slate-100 dark:hover:bg-slate-800 p-2 text-sm rounded-md">
               <span class="material-symbols-outlined bg-slate-100 rounded-full p-2">bookmark</span>
               <span>Wishlist</span>
             </a>
@@ -66,11 +72,11 @@
               <span class="material-symbols-outlined text-base">{{ communityOpen ? 'expand_less' : 'expand_more' }}</span>
             </button>
             <div *ngIf="communityOpen" class="mt-1 flex flex-col">
-              <a routerLink="/clubs" class="flex items-center gap-2 hover:bg-slate-100 p-2 text-sm rounded-md">
+              <a routerLink="/clubs" class="flex items-center gap-2 hover:bg-slate-100 dark:hover:bg-slate-800 p-2 text-sm rounded-md">
                 <span class="material-symbols-outlined bg-slate-100 rounded-full p-2">groups_3</span>
                 <span>Book Clubs</span>
               </a>
-              <a routerLink="/meetups" class="flex items-center gap-2 hover:bg-slate-100 p-2 text-sm rounded-md">
+              <a routerLink="/meetups" class="flex items-center gap-2 hover:bg-slate-100 dark:hover:bg-slate-800 p-2 text-sm rounded-md">
                 <span class="material-symbols-outlined bg-slate-100 rounded-full p-2">adaptive_audio_mic</span>
                 <span>Meetups</span>
               </a>
@@ -81,15 +87,15 @@
 
       <div *ngIf="authed" class="space-y-2">
         <div class="text-xs uppercase tracking-wide text-slate-500 px-3">Creator Programs</div>
-        <a routerLink="/enroll/author" class="flex items-center gap-2 hover:bg-slate-100 p-2 text-sm rounded-md">
+        <a routerLink="/enroll/author" class="flex items-center gap-2 hover:bg-slate-100 dark:hover:bg-slate-800 p-2 text-sm rounded-md">
           <span class="material-symbols-outlined bg-slate-100 rounded-full p-2">menu_book</span>
           <span>Register as Author</span>
         </a>
-        <a routerLink="/enroll/publisher" class="flex items-center gap-2 hover:bg-slate-100 p-2 text-sm rounded-md">
+        <a routerLink="/enroll/publisher" class="flex items-center gap-2 hover:bg-slate-100 dark:hover:bg-slate-800 p-2 text-sm rounded-md">
           <span class="material-symbols-outlined bg-slate-100 rounded-full p-2">business_center</span>
           <span>Register as Publisher</span>
         </a>
-        <a routerLink="/dashboard" class="flex items-center gap-2 hover:bg-slate-100 p-2 text-sm rounded-md">
+        <a routerLink="/dashboard" class="flex items-center gap-2 hover:bg-slate-100 dark:hover:bg-slate-800 p-2 text-sm rounded-md">
           <span class="material-symbols-outlined bg-slate-100 rounded-full p-2">dashboard</span>
           <span>Dashboard</span>
         </a>
@@ -114,11 +120,11 @@
         <a [href]="accountUrl">Account</a>
         <span *ngIf="userName"> ({{ userName }})</span>
       </span>
-      <a routerLink="/settings" class="flex items-center gap-2 hover:bg-slate-100 p-2 text-lg rounded-md">
+      <a routerLink="/settings" class="flex items-center gap-2 hover:bg-slate-100 dark:hover:bg-slate-800 p-2 text-lg rounded-md">
         <span class="material-symbols-outlined bg-slate-100 rounded-full p-2">settings</span>
         <span>Settings</span>
       </a>
-      <a routerLink="/help" class="flex items-center gap-2 hover:bg-slate-100 p-2 text-lg rounded-md">
+      <a routerLink="/help" class="flex items-center gap-2 hover:bg-slate-100 dark:hover:bg-slate-800 p-2 text-lg rounded-md">
         <span class="material-symbols-outlined bg-slate-100 rounded-full p-2">help</span>
         <span>Help</span>
       </a>
@@ -127,4 +133,5 @@
   <main class="col-span-4 h-full overflow-x-hidden overflow-y-auto py-4">
     <router-outlet />
   </main>
+  </div>
 </div>
