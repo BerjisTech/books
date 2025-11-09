@@ -1,9 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { RouterLink, RouterOutlet } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { environment } from '../environments/environment';
 import { CommonModule } from '@angular/common';
-import { AuthService } from './auth.service';
+import { CoreAuthService, CoreAuthSession } from '@berjis/angular-auth';
 
 @Component({
   selector: 'app-root',
@@ -11,7 +11,7 @@ import { AuthService } from './auth.service';
   imports: [CommonModule, RouterOutlet, RouterLink, FormsModule],
   templateUrl: './app.component.html'
 })
-export class AppComponent implements OnInit {
+export class AppComponent implements OnInit, OnDestroy {
   isDark = false;
   isDev = !environment.production;
   coreBase = environment.apiBase;
@@ -24,7 +24,9 @@ export class AppComponent implements OnInit {
   collectionOpen = false;
   marketplaceOpen = false;
   communityOpen = false;
-  constructor(private auth: AuthService) {}
+  private unsubscribeAuth?: () => void;
+
+  constructor(private auth: CoreAuthService) {}
   ngOnInit(): void {
     const persisted = (localStorage.getItem('theme') || '').toLowerCase();
     const preferDark = persisted === 'dark';
@@ -34,10 +36,12 @@ export class AppComponent implements OnInit {
     if (stored && !w.__BOOKS_API__) { w.__BOOKS_API__ = stored; }
     this.booksBase = w.__BOOKS_API__ || 'http://localhost:8088';
     this.newBooksBase = this.booksBase;
-    // Check auth/session against Core API
-    this.auth.isAuthed().subscribe(v => this.authed = !!v);
-    this.auth.user().subscribe(u => this.userName = u?.name || null);
-    this.auth.check();
+    this.unsubscribeAuth = this.auth.onSessionChange((session: CoreAuthSession) => this.applySession(session));
+    void this.auth.ensureAuth({ maxAgeMs: 1500 }).catch(() => {});
+  }
+
+  ngOnDestroy(): void {
+    this.unsubscribeAuth?.();
   }
   toggleTheme() { this.setTheme(this.isDark ? 'light' : 'dark'); }
   private setTheme(mode: 'light' | 'dark') {
@@ -65,5 +69,30 @@ export class AppComponent implements OnInit {
       this.booksBase = 'http://localhost:8088';
       this.setDevNotice('Books API base cleared; using default.', 'info');
     }
+  }
+
+  private applySession(session: CoreAuthSession) {
+    this.authed = !!session?.valid;
+    this.userName = this.resolveDisplayName(session);
+  }
+
+  private resolveDisplayName(session: CoreAuthSession): string | null {
+    if (!session) {
+      return null;
+    }
+    const profile = session.profile ?? {};
+    const candidates: Array<unknown> = [
+      (profile as Record<string, unknown>)['displayName'],
+      (profile as Record<string, unknown>)['name'],
+      (profile as Record<string, unknown>)['fullName'],
+      (profile as Record<string, unknown>)['username'],
+      session.email
+    ];
+    for (const value of candidates) {
+      if (typeof value === 'string' && value.trim().length > 0) {
+        return value.trim();
+      }
+    }
+    return null;
   }
 }

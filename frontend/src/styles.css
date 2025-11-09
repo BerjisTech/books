@@ -5,10 +5,6 @@
 body {
   font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
 }
-@import "https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined";
-@import "tailwindcss";
-@custom-variant dark (&:where(.dark, .dark *));
-
 @theme {
   --color-bg-light-start: #eff6ff; --color-bg-light-end: #f8fafc;
   --color-text-primary: #0f172a; --color-text-accent: #1e3a8a; --color-link: #60a5fa;

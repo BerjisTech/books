@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"database/sql"
 	"encoding/hex"
+	"log"
 	"net/http"
 	"regexp"
 	"strings"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/berjistech/berjis-ecosystem/books/service/internal/auth"
 	"github.com/berjistech/berjis-ecosystem/books/service/internal/billing"
+	coreauth "github.com/berjistech/berjis-ecosystem/shared/coreauth"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/jmoiron/sqlx"
@@ -310,8 +312,26 @@ func New(opts Options) *fiber.App {
 		return c.JSON(fiber.Map{"success": true, "data": rows})
 	})
 
+	httpClientAuth := &http.Client{Timeout: 8 * time.Second}
+	var authVerifier *coreauth.Verifier
+	if base := strings.TrimSpace(opts.CoreAPIBase); base != "" {
+		if v, err := coreauth.NewVerifier(coreauth.Config{
+			CoreAPIBase: base,
+			HTTPClient:  httpClientAuth,
+		}); err != nil {
+			log.Printf("warn: coreauth verifier init failed: %v", err)
+		} else {
+			authVerifier = v
+		}
+	}
 	// Authenticated routes
-	requireAuth := auth.Middleware(auth.Options{HS256Secret: opts.AuthHS256, Env: opts.Env, CoreAPIBase: opts.CoreAPIBase})
+	requireAuth := auth.Middleware(auth.Options{
+		HS256Secret: opts.AuthHS256,
+		Env:         opts.Env,
+		CoreAPIBase: opts.CoreAPIBase,
+		HTTPClient:  httpClientAuth,
+		Verifier:    authVerifier,
+	})
 
 	// List my books (as author or publisher)
 	app.Get("/v1/me/books", requireAuth, func(c *fiber.Ctx) error {

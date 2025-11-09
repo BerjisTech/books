@@ -22,22 +22,32 @@ import { BookComponent } from './app/components/book/book.component';
 import { AuthorsPageComponent } from './app/pages/authors.component';
 import { AuthorEnrollmentComponent } from './app/pages/author-enrollment.component';
 import { PublisherEnrollmentComponent } from './app/pages/publisher-enrollment.component';
+import { CORE_AUTH_API_BASE, createAuthGuard } from '@berjis/angular-auth';
+import { environment } from './environments/environment';
+
+const authGuard = createAuthGuard({
+  ensureOptions: { maxAgeMs: 1500 }
+});
 
 const routes: Routes = [
   { path: '', component: HomePageComponent },
   { path: 'marketplace', component: MarketplacePageComponent },
   { path: 'clubs', component: ClubsPageComponent },
   { path: 'meetups', component: MeetupsPageComponent },
-  { path: 'orders', component: OrdersPageComponent },
+  { path: 'orders', component: OrdersPageComponent, canActivate: [authGuard] },
   { path: 'book/:id', component: BookComponent },
   { path: 'book/:id/page/:n', component: ReaderPageComponent },
   { path: 'authors', component: AuthorsPageComponent },
-  { path: 'enroll/author', component: AuthorEnrollmentComponent },
-  { path: 'enroll/publisher', component: PublisherEnrollmentComponent },
-  { path: 'dashboard', component: DashboardPageComponent },
+  { path: 'enroll/author', component: AuthorEnrollmentComponent, canActivate: [authGuard] },
+  { path: 'enroll/publisher', component: PublisherEnrollmentComponent, canActivate: [authGuard] },
+  { path: 'dashboard', component: DashboardPageComponent, canActivate: [authGuard] },
   { path: '**', redirectTo: '' }
 ];
 
 bootstrapApplication(AppComponent, {
-  providers: [provideHttpClient(), provideRouter(routes)]
+  providers: [
+    provideHttpClient(),
+    provideRouter(routes),
+    { provide: CORE_AUTH_API_BASE, useValue: environment.apiBase }
+  ]
 }).catch(err => console.error(err));

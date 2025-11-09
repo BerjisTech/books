@@ -1,10 +1,10 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, Input, OnDestroy, OnInit } from '@angular/core';
 import { Book } from '../interfaces/book';
 import { BooksComponent } from "../components/books/books.component";
 import { BooksService } from '../services/books.service';
 import { CommonModule } from '@angular/common';
 import { BookCardComponent } from "../components/book-card/book-card.component";
-import { AuthService } from '../auth.service';
+import { CoreAuthService, CoreAuthSession } from '@berjis/angular-auth';
 
 @Component({
   selector: 'app-home',
@@ -12,7 +12,7 @@ import { AuthService } from '../auth.service';
   templateUrl: './home.component.html',
   imports: [CommonModule, BooksComponent]
 })
-export class HomePageComponent implements OnInit {
+export class HomePageComponent implements OnInit, OnDestroy {
 
   authed = false;
   accountUrl = 'http://berjis.tech/account';
@@ -20,14 +20,39 @@ export class HomePageComponent implements OnInit {
   pageTitle: string = 'Book Recomendations';
   books: Book[] = []
 
-  constructor(private auth: AuthService) { }
+  private unsubscribeAuth?: () => void;
+
+  constructor(private auth: CoreAuthService) { }
 
   ngOnInit(): void {
-    // Check auth/session against Core API
-    this.auth.isAuthed().subscribe(v => this.authed = !!v);
-    this.auth.user().subscribe(u => this.userName = u?.name || null);
-    this.auth.check();
-
+    this.unsubscribeAuth = this.auth.onSessionChange((session: CoreAuthSession) => {
+      this.authed = !!session?.valid;
+      this.userName = this.resolveDisplayName(session);
+    });
+    void this.auth.ensureAuth({ maxAgeMs: 1500 }).catch(() => {});
   }
 
+  ngOnDestroy(): void {
+    this.unsubscribeAuth?.();
+  }
+
+  private resolveDisplayName(session: CoreAuthSession | null | undefined): string | null {
+    if (!session) {
+      return null;
+    }
+    const profile = session.profile ?? {};
+    const candidates: Array<unknown> = [
+      (profile as Record<string, unknown>)['displayName'],
+      (profile as Record<string, unknown>)['name'],
+      (profile as Record<string, unknown>)['fullName'],
+      (profile as Record<string, unknown>)['username'],
+      session.email
+    ];
+    for (const value of candidates) {
+      if (typeof value === 'string' && value.trim().length > 0) {
+        return value.trim();
+      }
+    }
+    return null;
+  }
 }

@@ -1,7 +1,7 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { AuthService } from '../auth.service';
+import { CoreAuthService, CoreAuthSession } from '@berjis/angular-auth';
 import { ApiService } from '../api.service';
 import { Router } from '@angular/router';
 
@@ -11,7 +11,7 @@ import { Router } from '@angular/router';
   imports: [CommonModule, FormsModule],
   templateUrl: './dashboard.component.html'
 })
-export class DashboardPageComponent implements OnInit {
+export class DashboardPageComponent implements OnInit, OnDestroy {
   authed = false;
   roles: string[] = [];
   library: any[] = [];
@@ -64,7 +64,10 @@ export class DashboardPageComponent implements OnInit {
     general: null
   };
 
-  constructor(private auth: AuthService, private api: ApiService, private router: Router) {}
+  private unsubscribeAuth?: () => void;
+  private hasLoadedInitial = false;
+
+  constructor(private auth: CoreAuthService, private api: ApiService, private router: Router) {}
 
   private setNotice(key: keyof typeof this.notices, text: string, tone: 'info' | 'success' | 'error' = 'info') {
     this.notices[key] = { text, tone };
@@ -75,19 +78,52 @@ export class DashboardPageComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.auth.isAuthed().subscribe(a => {
-      this.authed = !!a;
-      if (this.authed) {
-        this.loadLibrary();
-        this.loadMyBooks();
-        this.loadProfiles();
-        this.loadCollaborations();
-        this.loadEarnings();
+    this.unsubscribeAuth = this.auth.onSessionChange((session: CoreAuthSession) => this.handleSession(session));
+    void this.auth.ensureAuth({ maxAgeMs: 1500 }).catch(() => {});
+  }
+
+  ngOnDestroy(): void {
+    this.unsubscribeAuth?.();
+  }
+
+  private handleSession(session: CoreAuthSession) {
+    this.authed = !!session?.valid;
+    this.roles = this.collectRoles(session);
+    if (this.authed && !this.hasLoadedInitial) {
+      this.hasLoadedInitial = true;
+      this.loadLibrary();
+      this.loadMyBooks();
+      this.loadProfiles();
+      this.loadCollaborations();
+      this.loadEarnings();
+    }
+    if (!this.authed) {
+      this.hasLoadedInitial = false;
+    }
+  }
+
+  private collectRoles(session: CoreAuthSession | null | undefined): string[] {
+    if (!session) {
+      return [];
+    }
+    const roles = new Set<string>();
+    const add = (values: string[] | undefined) => {
+      if (!values) { return; }
+      for (const value of values) {
+        const trimmed = typeof value === 'string' ? value.trim().toLowerCase() : '';
+        if (trimmed) {
+          roles.add(trimmed);
+        }
       }
-    });
-    this.auth.roles().subscribe(r => this.roles = r || []);
-    // ensure session checked on entry
-    this.auth.check();
+    };
+    add(session.roles);
+    add(session.platformRoles);
+    if (session.appRoles) {
+      for (const value of Object.values(session.appRoles)) {
+        add(Array.isArray(value) ? value : undefined);
+      }
+    }
+    return Array.from(roles);
   }
 
   hasRole(r: string) { return this.roles.includes(r); }
