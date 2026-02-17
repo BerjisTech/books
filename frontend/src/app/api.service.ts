@@ -257,4 +257,29 @@ export class ApiService {
   joinSession(sessionId: string) {
     return this.http.post<{ success: boolean }>(`/svc/v1/sessions/${encodeURIComponent(sessionId)}/join`, {}, { headers: this.headers() });
   }
+
+  // Reviews
+  getBookReviews(bookId: string) {
+    return this.http.get<{ success: boolean; data: { reviews: any[]; averageRating: number | null; totalCount: number } }>(
+      `/svc/v1/books/${encodeURIComponent(bookId)}/reviews`
+    );
+  }
+
+  submitReview(bookId: string, payload: { rating: number; title?: string; body?: string }) {
+    return this.http.post<{ success: boolean; data: { id: string } }>(
+      `/svc/v1/books/${encodeURIComponent(bookId)}/reviews`, payload, { headers: this.headers() }
+    );
+  }
+
+  deleteReview(bookId: string) {
+    return this.http.delete<{ success: boolean }>(
+      `/svc/v1/books/${encodeURIComponent(bookId)}/reviews`, { headers: this.headers() }
+    );
+  }
+
+  getMyReview(bookId: string) {
+    return this.http.get<{ success: boolean; data: any }>(
+      `/svc/v1/books/${encodeURIComponent(bookId)}/my-review`, { headers: this.headers() }
+    );
+  }
 }

@@ -1,7 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, SecurityContext } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { DomSanitizer } from '@angular/platform-browser';
 import { ApiService } from '../api.service';
 
 @Component({
@@ -14,7 +14,7 @@ export class ReaderPageComponent {
   bookId = '';
   pageNo = 1;
   totalPages = 0;
-  html: SafeHtml = '';
+  html: string = '';
   error = '';
   pages: { pageNo: number; section?: string; label?: string }[] = [];
   chapters: { number: number; title: string; pageNoStart?: number }[] = [];
@@ -49,7 +49,7 @@ export class ReaderPageComponent {
       next: res => {
         const d = res?.data || {};
         this.totalPages = d.totalPages || 0;
-        this.html = this.san.bypassSecurityTrustHtml(d.html || '<p>No content</p>');
+        this.html = this.san.sanitize(SecurityContext.HTML, d.html || '<p>No content</p>') || '';
         this.section = d.section || '';
         this.label = d.label || '';
         this.audioUrl = d.audioUrl || '';

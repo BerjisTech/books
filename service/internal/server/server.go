@@ -15,6 +15,7 @@ import (
 	coreauth "github.com/berjistech/berjis-ecosystem/shared/coreauth"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/fiber/v2/middleware/limiter"
 	"github.com/jmoiron/sqlx"
 	"strconv"
 )
@@ -196,6 +197,18 @@ type MessageReport struct {
 	CreatedAt  time.Time  `db:"created_at" json:"createdAt"`
 }
 
+type BookReview struct {
+	ID        string    `db:"id" json:"id"`
+	BookID    string    `db:"book_id" json:"bookId"`
+	UserID    string    `db:"user_id" json:"userId"`
+	Rating    int       `db:"rating" json:"rating"`
+	Title     *string   `db:"title" json:"title,omitempty"`
+	Body      *string   `db:"body" json:"body,omitempty"`
+	Status    string    `db:"status" json:"status"`
+	CreatedAt time.Time `db:"created_at" json:"createdAt"`
+	UpdatedAt time.Time `db:"updated_at" json:"updatedAt"`
+}
+
 func New(opts Options) *fiber.App {
 	app := fiber.New()
 	app.Use(cors.New(cors.Config{
@@ -203,6 +216,11 @@ func New(opts Options) *fiber.App {
 		AllowMethods:     "GET,POST,PUT,PATCH,DELETE,OPTIONS",
 		AllowHeaders:     "Authorization,Content-Type,Accept",
 		AllowCredentials: true,
+	}))
+	app.Use(limiter.New(limiter.Config{
+		Max:               60,
+		Expiration:        1 * time.Minute,
+		LimiterMiddleware: limiter.SlidingWindow{},
 	}))
 
 	// Health
@@ -1615,6 +1633,76 @@ func New(opts Options) *fiber.App {
 			return c.Status(500).JSON(fiber.Map{"success": false})
 		}
 		return c.JSON(fiber.Map{"success": true})
+	})
+
+	// ── Book Reviews ──────────────────────────────────────
+
+	// List reviews for a book (public)
+	app.Get("/v1/books/:id/reviews", func(c *fiber.Ctx) error {
+		bookID := c.Params("id")
+		rows := []BookReview{}
+		if err := opts.DB.Select(&rows,
+			`SELECT id, book_id, user_id, rating, title, body, status, created_at, updated_at
+			 FROM book_reviews WHERE book_id=$1 AND status='published' ORDER BY created_at DESC LIMIT 100`, bookID); err != nil {
+			return c.Status(500).JSON(fiber.Map{"success": false})
+		}
+		// Aggregate stats
+		var avg *float64
+		var count int
+		_ = opts.DB.QueryRowx(`SELECT ROUND(AVG(rating)::numeric,1), COUNT(*) FROM book_reviews WHERE book_id=$1 AND status='published'`, bookID).Scan(&avg, &count)
+		return c.JSON(fiber.Map{"success": true, "data": fiber.Map{"reviews": rows, "averageRating": avg, "totalCount": count}})
+	})
+
+	// Create or update a review (one per user per book)
+	app.Post("/v1/books/:id/reviews", requireAuth, func(c *fiber.Ctx) error {
+		bookID := c.Params("id")
+		uid := auth.UserID(c)
+		var body struct {
+			Rating int     `json:"rating"`
+			Title  *string `json:"title"`
+			Body   *string `json:"body"`
+		}
+		if err := c.BodyParser(&body); err != nil {
+			return c.Status(400).JSON(fiber.Map{"success": false, "message": "invalid body"})
+		}
+		if body.Rating < 1 || body.Rating > 5 {
+			return c.Status(400).JSON(fiber.Map{"success": false, "message": "rating must be 1-5"})
+		}
+		var id string
+		err := opts.DB.QueryRowx(
+			`INSERT INTO book_reviews (book_id, user_id, rating, title, body)
+			 VALUES ($1, $2, $3, $4, $5)
+			 ON CONFLICT (book_id, user_id) DO UPDATE SET rating=$3, title=$4, body=$5, updated_at=now()
+			 RETURNING id`,
+			bookID, uid, body.Rating, body.Title, body.Body).Scan(&id)
+		if err != nil {
+			return c.Status(500).JSON(fiber.Map{"success": false, "message": "failed to save review"})
+		}
+		return c.JSON(fiber.Map{"success": true, "data": fiber.Map{"id": id}})
+	})
+
+	// Delete own review
+	app.Delete("/v1/books/:id/reviews", requireAuth, func(c *fiber.Ctx) error {
+		bookID := c.Params("id")
+		uid := auth.UserID(c)
+		if _, err := opts.DB.Exec(`DELETE FROM book_reviews WHERE book_id=$1 AND user_id=$2`, bookID, uid); err != nil {
+			return c.Status(500).JSON(fiber.Map{"success": false})
+		}
+		return c.JSON(fiber.Map{"success": true})
+	})
+
+	// Get current user's review for a book
+	app.Get("/v1/books/:id/my-review", requireAuth, func(c *fiber.Ctx) error {
+		bookID := c.Params("id")
+		uid := auth.UserID(c)
+		var review BookReview
+		err := opts.DB.QueryRowx(
+			`SELECT id, book_id, user_id, rating, title, body, status, created_at, updated_at
+			 FROM book_reviews WHERE book_id=$1 AND user_id=$2`, bookID, uid).StructScan(&review)
+		if err != nil {
+			return c.JSON(fiber.Map{"success": true, "data": nil})
+		}
+		return c.JSON(fiber.Map{"success": true, "data": review})
 	})
 
 	return app
